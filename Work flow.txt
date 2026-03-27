@@ -1,0 +1,265 @@
+Create blank solution as Adfactors.ProjectCollectionName
+Right click on solution -> Add-> New Solution Folder - > ProjectName
+
+
+Right click on folder->Add -> New Project -> Visual C# -> Windows -> Class Library
+Adfactors.ProjectCollectionName.ProjectName.Common
+
+VPN For 
+
+l;
+Softtech
+S0ftt3ch$
+
+
+--------------new prod -------------------
+
+43.205.26.165
+ 
+ya apna naya dev sql hain
+ 
+adfactorsorm
+c0ld1*5
+------------------------------------------
+
+E:\ADFACTORS\ORM\AdFactors.Workbench
+
+192.168.50.150
+adfactors
+Welcome1
+c0ld1*5
+
+192.168.100.60
+
+60 Server Password : S@ft13ch@34
+
+192.168.100.60
+
+UserID=softtech
+
+Password= S@ft13ch@34
+
+[4:29 pm, 17/01/2024] Mayuresh Joshi Adfactors PR: Machine IP : 192.168.50.199, uname: software, pass: L0gIn@24
+[4:37 pm, 17/01/2024] Mayuresh Joshi Adfactors PR: L0gIn@24
+
+--Mayuresh ka system
+
+192.168.50.238
+M J
+Welcome2
+
+
+----------
+
+[Yesterday 11:47 AM] Mayuresh Joshi
+203.115.122.27
+
+softtech
+
+Welcome123$%
+------------------
+--------------192.168.50.187
+--Connect@1
+
+--------------192.168.50.215
+--Welcome@111
+
+App Login Details
+
+admin
+password
+ 
+Rapid API 
+Username - ouruserone@gmail.com
+Password - Rapid@11
+
+https://www.c-sharpcorner.com/UploadFile/b926a6/insert-select-edit-delete-record-using-Asp-Net-listview/
+https://www.vskills.in/certification/tutorial/setting-up-the-listview/#:~:text=You%20can%20use%20the%20InsertItemTemplate,main%20layout%20of%20the%20control.
+
+--------------------
+
+temp mail -- https://tempmail.dev/en/Gmail#
+
+devtempmail1+ggoccepenj@gmail.com
+India@123
+
+
+
+-------------------------------IMP-------------------------------
+
+SERP
+A search engine results page, or SERP, is the page you see after entering a query into Google, Yahoo, or any other search engine
+
+IIA
+Intent Information Audit
+
+-----------------------------------
+Shubham
+
+
+
+Welcome1
+
+FUNC_NS_ColumnName
+
+
+------------------
+[Adfactors_ClientAnalysis]
+
+
+395732
+
+
+
+Twitter Login 
+
+raxec31906@teasya.com
+India@123
+
+
+
+---IMP Linnk
+
+
+https://www.aspsnippets.com/questions/172965/Implement-Bootstrap-tags-input-plugin-in-ASPNet/
+
+-----
+ReportGenerator.cs --> GenerateOnlineDossier
+---
+TextToDisplay,Discription
+
+
+
+
+server : 110.173.181.220
+Domain :adfactorspr.local
+NetExtender Id Password USER Name : "V.User1" Password: "Ypnw%sF@d5" USER Name : "V.User2" Password: "cmh$9Q&ydf" Machine IP details IP Address-172.16.110.98 UserName-contract_user2 Password-Welcome2 Developer3
+
+exec [dbo].[USP_Analaysis_Search_Mayuresh] '755','2024-01-18','2024-01-25'
+
+
+[Yesterday 3:27 PM] Mayuresh Joshi
+<add name="MTrackConnection" connectionString="data source=203.115.122.11;database=MTrack;User Id=mtrack;password=MTr@ck%13" providerName="System.Data.SqlClient"/>
+
+USP_EntityQuery_Fetch
+
+public const string USP_Analaysis_Search = "USP_Analaysis_Search_Mayuresh";
+
+
+-----------
+
+
+Sentry Notifications - D:\Shivakiran\Notification Sender Sentry 2.0 - Live
+FeedMonitor - D:\ADFACTORS\ADF.Listener.FeedMonitor\ADF.Listener.FeedMonitor
+Sahadeva - D:\ADFACTORS\Sahadeva V2\Sahadeva
+TestCEP - D:\Shivakiran\Dossier Excel\NewsLetter
+
+
+select * from  [110.173.181.219].[EmailSentimentMVP].[dbo].[User]
+
+
+
+
+----------------
+
+.27
+
+E:\DATA\WEBSITES\ADFACTORS\Logs\RTM
+
+E:\DATA\WEBSITES\ADFACTORS\WebApps\API\SentryV2_Live
+
+----------------------------------------------
+
+Sentry UAT Server details
+
+13.203.53.95
+Administrator
+;Tic*2)cMZhNkFWVf)mvd(hfNsr1KLjC
+
+------------------------------
+
+Sentry DB details
+
+Hi Mayuresh,
+Please find the UAT environment details below.
+SQL 1 - 10.7.3.140 (DB A and D)
+SQL 2 - 10.7.4.155 (DB B, Ca, C2, C3)
+SQL 3 - 10.7.3.218 (DB E)
+Username - adfactorsorm
+Password - TjSl3SgLgGUd
+
+------------------------------
+
+
+ADFReadUser	Re@dUser123$%	10.1.3.217	(DB A and D)
+ADFReadUser	Re@dUser123$%	10.1.4.146	(DB B, C1, C2, C3)
+ADFReadUser	Re@dUser123$%	10.1.4.133	(DB E)
+-----------------------------------
+Zyte
+
+ourusertwo@gmail.com
+Zyte123$%
+ 
+
+
+------------------------
+
+prod 
+
+WEB-SRV	
+Administrator	
+;Tic*2)cMZhNkFWVf)mvd(hfNsr1KLjC
+13.232.36.49
+
+------
+
+global net 
+
+v_shivkirandasari
+ 
+yehi id hai
+ 
+ip is 110.173.181.254
+ 
+Welcome5
+ 
+-------------------
+Dev
+Administrator	
+cu6RpgZ4X$xvnz=j(LXmEQtB;4$U&RuC
+13.202.204.62
+
+---------------------------
+Elastic search
+
+Kibana : http://10.1.6.12:5601/app/home#/
+
+
+---------------------------------------------
+New prd -
+
+
+User Name - ADFReadUser
+Password - Re@dUser123$%
+Server Name - 10.1.3.219
+
+adfactorskalki
+K@1ki$%2025
+
+------------------------------------------
+Testing DB -
+
+192.168.100.109\MSSQLSERVER2022
+DB User: adfactorsorm
+Pass: @adfact0rs035
+
+
+
+----2025-11-19 23:21:00
+
+------------------------------------------------
+
+
+prana220125@gmail.com
+Starfish@45
+ 
