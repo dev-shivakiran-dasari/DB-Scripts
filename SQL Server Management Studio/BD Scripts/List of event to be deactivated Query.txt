@@ -1,0 +1,15 @@
+Query To Fetch The Tweets Count For Subscription Interval.
+ 
+Our Subscription of Twitter Renews At 14th of every month.
+ 
+select TagLinkTweetMapE.TagID,TagName,count(distinct TagLinkTweetMapE.TLTMEID) from TagLinkTweetMapE with (nolock)
+inner join SahadevA.dbo.TagQuery on TagQuery.tagid=TagLinkTweetMapE.TagID  and PlatformID=3
+inner join SahadevA.dbo.Tag on Tag.tagid=TagQuery.TagID
+where TagLinkTweetMapE.CreatedAt>='2025-10-14 00:00:00' and TagQuery.IsActive=1
+group by TagLinkTweetMapE.TagID,TagName
+order by 3 desc
+ 
+ye query use karke hum log cpunt yash aur anisha ko bhejte hain.
+ 
+ye wala table unko bhejde.
+Aur batana unko ki mayuresh jo har month bhejta hain wo data hain ye, isme se kaunsa band kar sakte hain, dekh lo..

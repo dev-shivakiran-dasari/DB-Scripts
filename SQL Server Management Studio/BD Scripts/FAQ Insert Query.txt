@@ -1,0 +1,56 @@
+select * from mstHelp_FAQ
+
+
+--INSERT INTO mstHelp_FAQ(Question,Answer,Application,IsActive,CreatedAt)
+--VALUES('How to write event description for Event Type: Industry?',
+--'Guidelines:
+--Summarize the event in one concise line.
+--Use essential keywords, avoiding extremely specific detail.
+--
+--Below are examples event type: Industry
+--Eg 1- Conversations around electric and hybrid vehicles in India
+--Eg 2- Conversations around Molbio''s competitors: GeneXpert, Roche Diagnostics or Thermo Fisher Scientific Diagnostics'
+--,'Kalki',1,getdate()
+--)
+
+--INSERT INTO mstHelp_FAQ(Question,Answer,Application,IsActive,CreatedAt)
+--VALUES('How to write event description for Event Type: Crises ?',
+--'Guidelines:
+--Summarize the event in one concise line.
+--Use essential keywords, avoiding extremely specific detail.
+--
+--Below are examples event type: Crises
+--Eg 1- Denied Wheelchair By Air India, 82-Year-Old Woman Falls, Lands In Hospital
+--Eg 2- Air India flight returns to Chicago over clogged loos'
+--,'Kalki',1,getdate()
+--)
+
+--INSERT INTO mstHelp_FAQ(Question,Answer,Application,IsActive,CreatedAt)
+--VALUES('How to write event description for Event Type: Announcement ?',
+--'Guidelines:
+--Summarize the event in one concise line.
+--Use essential keywords, avoiding extremely specific detail.
+--
+--Below are examples event type: Announcement
+--Eg 1- Tata Power Renewables signs MOU with Andhra Pradesh Govt
+--Eg 2- Tesla launches in India'
+--,'Kalki',1,getdate()
+--)
+
+--INSERT INTO mstHelp_FAQ(Question,Answer,Application,IsActive,CreatedAt)
+--VALUES('How to write event description for Event Type: General Listening ?',
+--'Below is an example of event type: General listening
+--
+--General listening of Accel Partners:
+--
+--Client name: Accel
+--Other names of client: Accel Partners
+--Client description: Prominent venture capital firm backing innovative startups.
+--Client products: Accel Venture Capital, Accel Startups Fund, Accel Growth Equity
+--Client spokesperson: Prashanth Prakash, Subrata Mitra, Anand Daniel, Prayank Swaroop, Shekhar Kirani, Abhinav Chaturvedi, and Barath Subramanian.'
+--,'Kalki',1,getdate()
+--)
+
+
+
+

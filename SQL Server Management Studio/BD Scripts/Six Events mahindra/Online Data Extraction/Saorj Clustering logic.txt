@@ -1,0 +1,1864 @@
+USE [OnDemandDB]
+GO
+/****** Object:  StoredProcedure [dbo].[USP_Tagged_OnlineLinks_TataMotors]    Script Date: 09-09-2025 15:16:13 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[USP_Tagged_OnlineLinks_TataMotors]
+AS
+BEGIN
+ 
+    SET NOCOUNT ON;
+
+    INSERT INTO LinkOnlineTagged_TataMotors_24July (
+        [article_id],[incident_id] ,[url] ,[title] ,[description]  ,[date_time]
+      ,[author] ,[sentiment] ,[publication]  ,[publication_icon] ,[publication_category],[publication_type]
+      ,[publication_da]  ,[publication_traffic] ,[pi_score],[date_sort]  ,[da_sort]
+      ,[traffic_sort] ,[pi_score_sort] ,[mention_type]  ,[is_bookmarked] ,[headline_sentiment],
+      Classifier_IsNonNews,  Classifier_StockNews,  Classifier_Reach_LessThan500,
+        Classifier_Reach_MoreThan10000, Classifier_URL_ContentType, Classifier_TradeMedia,
+        Classifier_Client_TataMotors, Classifier_Client_ProductMention, Classifier_Client_TataAutocomp,
+        Classifier_OtherCompanies, Classifier_ScooterOnly, Classifier_Accident,
+        Classifier_Review, Classifier_RatanTata,Classifier_IPO, Classifier_Exports, Classifier_AutoExpo, Classifier_Launch, 
+    Classifier_ScooterBrands, Classifier_LuxuryBrands, Classifier_Festive, 
+    Classifier_Manufacture, Classifier_PreOwned, Classifier_SectorSpecific, Classifier_CompetitorProducts,
+Classifier_IsCompetitorSpokespersonMentioned,Classifier_IsNotRelevantDomain
+
+
+    )
+    SELECT 
+         [article_id],[incident_id] ,[url] ,[title] ,[description]  ,[date_time]
+      ,[author] ,[sentiment] ,[publication]  ,[publication_icon] ,[publication_category],[publication_type]
+      ,[publication_da]  ,[publication_traffic] ,[pi_score],[date_sort]  ,[da_sort]
+      ,[traffic_sort] ,[pi_score_sort] ,[mention_type]  ,[is_bookmarked] ,[headline_sentiment],
+
+
+	   					-- Classifier: Non-News Domain
+		CASE 
+			WHEN EXISTS (SELECT 1 FROM MstNonNewsDomain ND WHERE ND.Domain = L.Publication) 
+			THEN 'Yes' ELSE 'No' 
+		END,
+        -- Classifier 1: Stock News
+        --CASE 
+        --    WHEN L.URL LIKE '%stock%' OR L.URL LIKE '%share-price%' OR L.URL LIKE '%share+price%' 
+        --         OR L.URL LIKE '%NIFTY%' OR L.URL LIKE '%Sensex%' OR L.URL LIKE '%mutual-funds%' OR L.URL LIKE '%mutual+funds%'
+        --      OR L.Title LIKE '%stock%' OR L.Title LIKE '%share price%' OR L.Title LIKE '%NIFTY%' OR L.Title LIKE '%Sensex%' OR L.Title LIKE '%mutual funds%'
+        --    THEN 'Yes' ELSE 'No'
+        --END,
+		
+  -- Classifier 1: Stock News
+		CASE 
+				WHEN L.URL LIKE '%stock%' 
+					 OR L.URL LIKE '%sensex%' 
+					 OR L.URL LIKE '%NIFTY%' 
+					 OR L.URL LIKE '%mutual-funds%' 
+					 OR L.URL LIKE '%mutual+funds%' 
+					 OR L.URL LIKE '%market-this-week%' 
+					 OR L.URL LIKE '%market+this+week%' 
+					 OR L.URL LIKE '%BSE-index%' 
+					 OR L.URL LIKE '%BSE+index%' 
+					 OR L.URL LIKE '%MF%' 
+					 OR L.URL LIKE '%Brokerage%'
+					 OR L.Title LIKE '%stock%' 
+					 OR L.Title LIKE '%sensex%' 
+					 OR L.Title LIKE '%NIFTY%' 
+					 OR L.Title LIKE '%mutual funds%' 
+					 OR L.Title LIKE '%market this week%' 
+					 OR L.Title LIKE '%BSE index%' 
+					 OR L.Title LIKE '%MF%' 
+					 OR L.Title LIKE '%Brokerage%'
+				THEN 'Yes' 
+				ELSE 'No' 
+			END,
+
+        ---- Classifier 2: Also Read
+        --CASE 
+        --    WHEN L.HitSentence LIKE 'Also read%' OR L.HitSentence LIKE 'Read More%' THEN 'Yes'
+        --    ELSE 'No'
+        --END,
+
+        ---- Classifier 3: Reach < 500
+        --CASE WHEN L.publication_traffic < 500 THEN 'Yes' ELSE 'No' END,
+
+        ---- Classifier 4: Reach > 10000
+        --CASE WHEN L.publication_traffic > 10000 THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 3: Reach < 500
+CASE 
+    WHEN 
+        CASE 
+            WHEN L.publication_traffic LIKE '%M' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000000
+            WHEN L.publication_traffic LIKE '%K' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000
+            ELSE TRY_CAST(L.publication_traffic AS FLOAT)
+        END < 500 
+    THEN 'Yes' 
+    ELSE 'No' 
+END ,
+
+-- Classifier 4: Reach > 10000
+CASE 
+    WHEN 
+        CASE 
+            WHEN L.publication_traffic LIKE '%M' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000000
+            WHEN L.publication_traffic LIKE '%K' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000
+            ELSE TRY_CAST(L.publication_traffic AS FLOAT)
+        END > 10000 
+    THEN 'Yes' 
+    ELSE 'No' 
+END ,
+
+
+        -- Classifier 5: URL Content Type
+       CASE 
+            WHEN L.URL LIKE '%/tag/%' THEN 'tag'
+            WHEN L.URL LIKE '%/video/%' THEN 'video'
+            WHEN L.URL LIKE '%/photo-gallery/%' THEN 'photo-gallery'
+            ELSE NULL
+        END,
+
+        CASE 
+            WHEN L.Publication LIKE '%auto%' OR L.Publication LIKE '%car%' OR L.Publication LIKE '%motor%' 
+                 OR L.Publication LIKE '%drive%' OR L.Publication LIKE '%mechanic%'
+            THEN 'Yes' ELSE 'No'
+        END,
+
+      
+        -- Classifier 7: Tata Motors
+        CASE 
+            WHEN (L.URL LIKE '%Tata-Motors%' OR L.URL LIKE '%tata+motors%') OR (L.Title LIKE '%Tata motors%')
+            THEN 'Yes' ELSE 'No'
+        END,
+
+        -- Classifier 8: Product Mention
+        CASE
+            WHEN L.URL LIKE '%Tata-electric%' OR L.URL LIKE '%Tata+electric%' OR L.URL LIKE '%Tata+EV%' OR L.URL LIKE '%Tata-EV%' 
+                OR L.URL LIKE '%Tiago%' OR L.URL LIKE '%Tigor%' OR L.URL LIKE '%Punch%' OR L.URL LIKE '%Harrier%' 
+                OR L.URL LIKE '%Safari%' OR L.URL LIKE '%Nexon%' OR L.URL LIKE '%Curvv%' OR L.URL LIKE '%Altroz%' OR L.URL LIKE '%Sierra%'
+                OR L.Title LIKE '%Tata electric%' OR L.Title LIKE '%Tata EV%' OR L.Title LIKE '%Tiago%' OR L.Title LIKE '%Tigor%'
+                OR L.Title LIKE '%Punch%' OR L.Title LIKE '%Harrier%' OR L.Title LIKE '%Safari%' OR L.Title LIKE '%Nexon%'
+                OR L.Title LIKE '%Curvv%' OR L.Title LIKE '%Altroz%' OR L.Title LIKE '%Sierra%'
+            THEN 'Yes' ELSE 'No'
+        END,
+
+        -- Classifier 9: Tata Autocomp
+        CASE WHEN L.Title LIKE '%Autocomp%' THEN 'Yes' ELSE 'No' END,
+
+        -- Classifier 10: Other Company
+        --CASE 
+        --    WHEN L.Title LIKE '%Mahindra%' OR L.Title LIKE '%Kia%' OR L.Title LIKE '%MG Motors%' OR L.Title LIKE '%Hyundai%' 
+        --      OR L.Title LIKE '%Maruti%' OR L.Title LIKE '%Citroen%' OR L.Title LIKE '%Toyota%' OR L.Title LIKE '%Honda%' 
+        --      OR L.Title LIKE '%Volkswagon%' OR L.Title LIKE '%Skoda%' OR L.Title LIKE '%Nissan%' OR L.Title LIKE '%Renault%' 
+        --      OR L.Title LIKE '%Jaguar%' OR L.Title LIKE '%Ola%' OR L.Title LIKE '%Bajaj%'
+        --    THEN 'Yes' ELSE 'No'
+        --END,
+
+		
+		CASE 
+			WHEN L.Title LIKE '%Mahindra%'  OR L.Title LIKE '%Kia%' OR L.Title LIKE '%MG Motors%' OR L.Title LIKE '%Hyundai%'
+				 OR L.Title LIKE '%Maruti%' OR L.Title LIKE '%Citroen%' OR L.Title LIKE '%Citroën%' OR L.Title LIKE '%Toyota%'
+				 OR L.Title LIKE '%Honda%' OR L.Title LIKE '%Volkswagon%' OR L.Title LIKE '%Skoda%' OR L.Title LIKE '%Nissan%'
+				 OR L.Title LIKE '%Renault%' OR L.Title LIKE '%BYD%'
+			THEN 'Yes' ELSE 'No' END,
+
+        -- Classifier 11: Scooter only
+        CASE WHEN L.Title LIKE '%Scooter%' AND L.Title NOT LIKE '%Car%' THEN 'Yes' ELSE 'No' END,
+
+        -- Classifier 12: Accident
+        CASE WHEN L.Title LIKE '%Accident%' THEN 'Yes' ELSE 'No' END,
+
+        -- Classifier 13: Review
+        CASE WHEN L.Title LIKE '%Review%' OR L.URL LIKE '%Review%' THEN 'Yes' ELSE 'No' END,
+
+        -- Classifier 14: Ratan Tata
+        CASE WHEN L.Title LIKE '%Ratan Tata%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 15: IPO
+		CASE WHEN L.Title LIKE '%IPO%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 16: Exports
+		CASE WHEN L.Title LIKE '%exports%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 17: Auto Expo
+		CASE 
+			WHEN (L.Title LIKE '%expo%' OR L.URL LIKE '%expo%')
+				 AND L.Title NOT LIKE '%exports%' AND L.URL NOT LIKE '%exports%'
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 18: Launch
+		CASE WHEN L.Title LIKE '%launch%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 19: Scooter Brands
+		CASE 
+			WHEN L.Title LIKE '%Ola%' OR L.Title LIKE '%Bajaj%' OR L.Title LIKE '%Hero%' OR L.Title LIKE '%Ather%'
+				 OR L.Title LIKE '%KTM%' OR L.Title LIKE '%Royal Enfield%'
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 20: Luxury Brands
+		CASE 
+			WHEN L.Title LIKE '%Jaguar%' OR L.Title LIKE '%BMW%' OR L.Title LIKE '%Land Rover%' OR L.Title LIKE '%Range Rover%'
+				 OR L.Title LIKE '%Audi%' OR L.Title LIKE '%Mercedes%' OR L.Title LIKE '%Volvo%'
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 21: Festive
+		CASE 
+			WHEN L.Title LIKE '%festive%' AND (L.Title LIKE '%car%' OR L.Title LIKE '%auto%')
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 22: Manufacture
+		CASE WHEN L.Title LIKE '%manufacture%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 23: Pre-owned
+		--CASE 
+		--	WHEN L.Title LIKE '%pre-owned%' OR L.Title LIKE '%second hand%'
+		--	THEN 'Yes' ELSE 'No' END,
+
+		CASE 
+			WHEN L.Title LIKE '%used cars%' 
+				 OR L.Title LIKE '%second-hand cars%' 
+				 OR L.Title LIKE '%secondhand cars%' 
+				 OR L.Title LIKE '%pre-owned%' 
+			THEN 'Yes' 
+			ELSE 'No' 
+		END,
+
+
+		-- Classifier 24: Sector Specific
+		CASE 
+			WHEN L.Title LIKE '%auto%' OR L.Title LIKE '%car%' OR L.Title LIKE '%vehicle%' OR L.Title LIKE '%mobility%' 
+				 OR L.Title LIKE '%SUV%' OR L.Title LIKE '%sedan%'
+			THEN 'Yes' ELSE 'No' END,
+
+		--- Classifier 25: Competitor Products in Title
+CASE 
+    WHEN (
+        (L.URL LIKE '%Exter%' OR L.URL LIKE '%Hyundai-Venue%' OR L.URL LIKE '%Hyundai+Venue%' OR L.URL LIKE '%Aura%' 
+         OR L.URL LIKE '%i10%' OR L.URL LIKE '%i20%' OR L.URL LIKE '%Creta%' OR L.URL LIKE '%Alcazar%' 
+         OR L.URL LIKE '%Verna%' OR L.URL LIKE '%Tucson%' OR L.URL LIKE '%Kona-EV%' OR L.URL LIKE '%Ioniq%')
+         
+        OR (L.URL LIKE '%Seltos%' OR L.URL LIKE '%EV6%' OR L.URL LIKE '%EV-6%' OR L.URL LIKE '%Sonet%' 
+         OR L.URL LIKE '%Carens%' OR L.URL LIKE '%Carnival%')
+
+        OR (L.URL LIKE '%WagonR%' OR L.URL LIKE '%Grand-Vitara%' OR L.URL LIKE '%Grand+Vitara%' OR L.URL LIKE '%S-Presso%'
+         OR L.URL LIKE '%Ertiga%' OR L.URL LIKE '%Fronx%' OR L.URL LIKE '%Dzire%' OR L.URL LIKE '%Celerio%' 
+         OR L.URL LIKE '%XL6%' OR L.URL LIKE '%Invicto%' OR L.URL LIKE '%Jimmy%' OR L.URL LIKE '%Baleno%' 
+         OR L.URL LIKE '%Brezza%' OR L.URL LIKE '%Alto%' OR L.URL LIKE '%Maruti-Swift%' OR L.URL LIKE '%Maruti+Swift%')
+
+        OR (L.URL LIKE '%Comet%' OR L.URL LIKE '%Astor%' OR L.URL LIKE '%Hector%' OR L.URL LIKE '%Gloster%')
+
+        OR (L.URL LIKE '%Mahindra-Electric%' OR L.URL LIKE '%Mahindra-EV%' OR L.URL LIKE '%MahindraEV%' 
+         OR L.URL LIKE '%Scorpio%' OR L.URL LIKE '%Bolero%' OR L.URL LIKE '%BE6e%' OR L.URL LIKE '%XEV-9e%' 
+         OR L.URL LIKE '%Thar%' OR L.URL LIKE '%XUV%' OR L.URL LIKE '%XUV700%')
+
+        OR (L.Title LIKE '%Exter%' OR L.Title LIKE '%Hyundai Venue%' OR L.Title LIKE '%Aura%' 
+         OR L.Title LIKE '%i10%' OR L.Title LIKE '%i20%' OR L.Title LIKE '%Creta%' OR L.Title LIKE '%Alcazar%' 
+         OR L.Title LIKE '%Verna%' OR L.Title LIKE '%Tucson%' OR L.Title LIKE '%Kona EV%' OR L.Title LIKE '%Ioniq%')
+
+        OR (L.Title LIKE '%Seltos%' OR L.Title LIKE '%EV6%' OR L.Title LIKE '%EV-6%' OR L.Title LIKE '%Sonet%' 
+         OR L.Title LIKE '%Carens%' OR L.Title LIKE '%Carnival%')
+
+        OR (L.Title LIKE '%WagonR%' OR L.Title LIKE '%Grand Vitara%' OR L.Title LIKE '%S-Presso%' 
+         OR L.Title LIKE '%Ertiga%' OR L.Title LIKE '%Fronx%' OR L.Title LIKE '%Dzire%' OR L.Title LIKE '%Celerio%' 
+         OR L.Title LIKE '%XL6%' OR L.Title LIKE '%Invicto%' OR L.Title LIKE '%Jimmy%' OR L.Title LIKE '%Baleno%' 
+         OR L.Title LIKE '%Brezza%' OR L.Title LIKE '%Alto%' OR L.Title LIKE '%Maruti Swift%')
+
+        OR (L.Title LIKE '%Comet%' OR L.Title LIKE '%Astor%' OR L.Title LIKE '%Hector%' OR L.Title LIKE '%Gloster%')
+
+        OR (L.Title LIKE '%Mahindra Electric%' OR L.Title LIKE '%Mahindra EV%' 
+         OR L.Title LIKE '%Scorpio%' OR L.Title LIKE '%Bolero%' OR L.Title LIKE '%BE 6e%' 
+         OR L.Title LIKE '%XEV 9e%' OR L.Title LIKE '%Thar%' OR L.Title LIKE '%XUV%' OR L.Title LIKE '%XUV700%')
+    )
+    AND NOT (
+        L.URL LIKE '%Tata-electric%' OR L.URL LIKE '%Tata+electric%' OR L.URL LIKE '%Tata+EV%' OR L.URL LIKE '%Tata-EV%' 
+        OR L.URL LIKE '%Tiago%' OR L.URL LIKE '%Tigor%' OR L.URL LIKE '%Punch%' OR L.URL LIKE '%Harrier%' 
+        OR L.URL LIKE '%Safari%' OR L.URL LIKE '%Nexon%' OR L.URL LIKE '%Curvv%' OR L.URL LIKE '%Altroz%' 
+        OR L.URL LIKE '%Sierra%' 
+
+        OR L.Title LIKE '%Tata electric%' OR L.Title LIKE '%Tata EV%' OR L.Title LIKE '%Tiago%' OR L.Title LIKE '%Tigor%'
+        OR L.Title LIKE '%Punch%' OR L.Title LIKE '%Harrier%' OR L.Title LIKE '%Safari%' OR L.Title LIKE '%Nexon%'
+        OR L.Title LIKE '%Curvv%' OR L.Title LIKE '%Altroz%' OR L.Title LIKE '%Sierra%'
+    )
+    THEN 'Yes' ELSE 'No'
+END,
+
+
+--- Classifier 26: Competitor Spokesperson Mentioned in Title
+
+		 CASE 
+				 WHEN Title LIKE '%Girish Arun Wagh%' OR Title LIKE '%Vivek Srivatsa%' OR Title LIKE '%Shailesh Chandra%' OR 
+         Title LIKE '%Natarajan Chandrasekaran%' OR Title LIKE '%N Chandrasekaran%' 
+				THEN 'Yes'
+				ELSE 'No'
+		END,
+
+		 -- Classifier 27: Not Relevant domain
+			CASE 
+				WHEN EXISTS (
+					SELECT 1 
+					FROM MstNonNewsDomain ND 
+					WHERE LOWER(ND.Domain) = LOWER(L.publication)
+				)
+				OR LOWER(L.publication) LIKE '%construction%'
+				OR LOWER(L.publication) LIKE '%tractor%'
+				OR LOWER(L.publication) LIKE '%kheti%'
+				OR LOWER(L.publication) LIKE '%agriculture%'
+				OR LOWER(L.publication) LIKE '%agro%'
+				OR LOWER(L.publication) LIKE '%farm%'
+				OR LOWER(L.publication) LIKE '%farming%'
+				OR LOWER(L.publication) LIKE '%truck%'
+				THEN 'Yes' ELSE 'No'
+			END 
+
+
+    --FROM LinkOnlineDeduped_TataMotors L
+	  FROM ExcelOnlineData_TataMotors_24July L
+
+
+
+END
+
+
+
+USE [OnDemandDB]
+GO
+/****** Object:  StoredProcedure [dbo].[USP_Tagged_OnlineLinks_MarutiSuzuki]    Script Date: 09-09-2025 15:15:54 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[USP_Tagged_OnlineLinks_MarutiSuzuki]
+AS
+BEGIN
+ 
+    SET NOCOUNT ON;
+
+    INSERT INTO LinkOnlineTagged_MarutiSuzuki_24July (
+        [article_id],[incident_id] ,[url] ,[title] ,[description]  ,[date_time]
+      ,[author] ,[sentiment] ,[publication]  ,[publication_icon] ,[publication_category],[publication_type]
+      ,[publication_da]  ,[publication_traffic] ,[pi_score],[date_sort]  ,[da_sort]
+      ,[traffic_sort] ,[pi_score_sort] ,[mention_type]  ,[is_bookmarked] ,[headline_sentiment],
+    Classifier_IsNonNews,Classifier_StockNews, Classifier_Reach_LessThan500,
+        Classifier_Reach_MoreThan10000, Classifier_URL_ContentType, Classifier_TradeMedia,
+        Classifier_Client_MarutiSuzuki, Classifier_Client_ProductMention,
+        Classifier_OtherCompanies, Classifier_ScooterOnly, Classifier_Accident,
+        Classifier_Review,Classifier_IPO, Classifier_Exports, Classifier_AutoExpo, Classifier_Launch, 
+    Classifier_ScooterBrands, Classifier_LuxuryBrands, Classifier_Festive, 
+    Classifier_Manufacture, Classifier_PreOwned, Classifier_SectorSpecific, Classifier_CompetitorProducts,
+Classifier_IsCompetitorSpokespersonMentioned,Classifier_IsNotRelevantDomain
+
+
+    )
+    SELECT 
+         [article_id],[incident_id] ,[url] ,[title] ,[description]  ,[date_time]
+      ,[author] ,[sentiment] ,[publication]  ,[publication_icon] ,[publication_category],[publication_type]
+      ,[publication_da]  ,[publication_traffic] ,[pi_score],[date_sort]  ,[da_sort]
+      ,[traffic_sort] ,[pi_score_sort] ,[mention_type]  ,[is_bookmarked] ,[headline_sentiment],
+	   					
+						
+						-- Classifier: Non-News Domain
+		CASE 
+			WHEN EXISTS (SELECT 1 FROM MstNonNewsDomain ND WHERE ND.Domain = L.Publication) 
+			THEN 'Yes' ELSE 'No' 
+		END,
+
+
+        -- Classifier 1: Stock News
+        --CASE 
+        --    WHEN L.URL LIKE '%stock%' OR L.URL LIKE '%share-price%' OR L.URL LIKE '%share+price%' 
+        --         OR L.URL LIKE '%NIFTY%' OR L.URL LIKE '%Sensex%' OR L.URL LIKE '%mutual-funds%' OR L.URL LIKE '%mutual+funds%'
+        --      OR L.Title LIKE '%stock%' OR L.Title LIKE '%share price%' OR L.Title LIKE '%NIFTY%' OR L.Title LIKE '%Sensex%' OR L.Title LIKE '%mutual funds%'
+        --    THEN 'Yes' ELSE 'No'
+        --END,
+		
+  -- Classifier 1: Stock News
+		CASE 
+				WHEN L.URL LIKE '%stock%' 
+					 OR L.URL LIKE '%sensex%' 
+					 OR L.URL LIKE '%NIFTY%' 
+					 OR L.URL LIKE '%mutual-funds%' 
+					 OR L.URL LIKE '%mutual+funds%' 
+					 OR L.URL LIKE '%market-this-week%' 
+					 OR L.URL LIKE '%market+this+week%' 
+					 OR L.URL LIKE '%BSE-index%' 
+					 OR L.URL LIKE '%BSE+index%' 
+					 OR L.URL LIKE '%MF%' 
+					 OR L.URL LIKE '%Brokerage%'
+					 OR L.Title LIKE '%stock%' 
+					 OR L.Title LIKE '%sensex%' 
+					 OR L.Title LIKE '%NIFTY%' 
+					 OR L.Title LIKE '%mutual funds%' 
+					 OR L.Title LIKE '%market this week%' 
+					 OR L.Title LIKE '%BSE index%' 
+					 OR L.Title LIKE '%MF%' 
+					 OR L.Title LIKE '%Brokerage%'
+				THEN 'Yes' 
+				ELSE 'No' 
+			END,
+
+        ---- Classifier 2: Also Read
+        --CASE 
+        --    WHEN L.HitSentence LIKE 'Also read%' OR L.HitSentence LIKE 'Read More%' THEN 'Yes'
+        --    ELSE 'No'
+        --END,
+
+        ---- Classifier 3: Reach < 500
+        --CASE WHEN L.publication_traffic < 500 THEN 'Yes' ELSE 'No' END,
+
+        ---- Classifier 4: Reach > 10000
+        --CASE WHEN L.publication_traffic > 10000 THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 3: Reach < 500
+CASE 
+    WHEN 
+        CASE 
+            WHEN L.publication_traffic LIKE '%M' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000000
+            WHEN L.publication_traffic LIKE '%K' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000
+            ELSE TRY_CAST(L.publication_traffic AS FLOAT)
+        END < 500 
+    THEN 'Yes' 
+    ELSE 'No' 
+END ,
+
+-- Classifier 4: Reach > 10000
+CASE 
+    WHEN 
+        CASE 
+            WHEN L.publication_traffic LIKE '%M' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000000
+            WHEN L.publication_traffic LIKE '%K' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000
+            ELSE TRY_CAST(L.publication_traffic AS FLOAT)
+        END > 10000 
+    THEN 'Yes' 
+    ELSE 'No' 
+END ,
+
+
+        -- Classifier 5: URL Content Type
+       CASE 
+            WHEN L.URL LIKE '%/tag/%' THEN 'tag'
+            WHEN L.URL LIKE '%/video/%' THEN 'video'
+            WHEN L.URL LIKE '%/photo-gallery/%' THEN 'photo-gallery'
+            ELSE NULL
+        END,
+
+        CASE 
+            WHEN L.Publication LIKE '%auto%' OR L.Publication LIKE '%car%' OR L.Publication LIKE '%motor%' 
+                 OR L.Publication LIKE '%drive%' OR L.Publication LIKE '%mechanic%'
+            THEN 'Yes' ELSE 'No'
+        END,
+
+     
+        CASE WHEN L.URL LIKE '%Maruti%' OR L.Title LIKE '%Maruti%' THEN 'Yes' ELSE 'No' END,
+
+        CASE WHEN L.URL LIKE '%Swift%' OR L.URL LIKE '%Dzire%' OR L.URL LIKE '%Baleno%' OR L.URL LIKE '%Celerio%' 
+                  OR L.URL LIKE '%WagonR%' OR L.URL LIKE '%Brezza%' OR L.URL LIKE '%Fronx%' OR L.URL LIKE '%Ignis%' 
+                  OR L.URL LIKE '%Alto%' OR L.Title LIKE '%Swift%' OR L.Title LIKE '%Dzire%' OR L.Title LIKE '%Baleno%'
+                  OR L.Title LIKE '%Celerio%' OR L.Title LIKE '%WagonR%' OR L.Title LIKE '%Brezza%' 
+                  OR L.Title LIKE '%Fronx%' OR L.Title LIKE '%Ignis%' OR L.Title LIKE '%Alto%'
+             THEN 'Yes' ELSE 'No' END,
+
+                			CASE 
+			WHEN L.Title LIKE '%Kia%'  OR L.Title LIKE '%Tata%' OR L.Title LIKE '%MG Motors%' OR L.Title LIKE '%Hyundai%'
+				 OR L.Title LIKE '%Mahindra%' OR L.Title LIKE '%Citroen%' OR L.Title LIKE '%Citroën%' OR L.Title LIKE '%Toyota%'
+				 OR L.Title LIKE '%Honda%' OR L.Title LIKE '%Volkswagon%' OR L.Title LIKE '%Skoda%' OR L.Title LIKE '%Nissan%'
+				 OR L.Title LIKE '%Renault%' OR L.Title LIKE '%BYD%'
+			THEN 'Yes' ELSE 'No' END,
+
+        CASE WHEN L.Title LIKE '%Scooter%' AND L.Title NOT LIKE '%Car%' THEN 'Yes' ELSE 'No' END,
+        CASE WHEN L.Title LIKE '%Accident%' THEN 'Yes' ELSE 'No' END,
+        CASE WHEN L.Title LIKE '%Review%' OR L.URL LIKE '%Review%' THEN 'Yes' ELSE 'No' END,
+
+			-- Classifier 15: IPO
+		CASE WHEN L.Title LIKE '%IPO%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 16: Exports
+		CASE WHEN L.Title LIKE '%exports%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 17: Auto Expo
+		CASE 
+			WHEN (L.Title LIKE '%expo%' OR L.URL LIKE '%expo%')
+				 AND L.Title NOT LIKE '%exports%' AND L.URL NOT LIKE '%exports%'
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 18: Launch
+		CASE WHEN L.Title LIKE '%launch%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 19: Scooter Brands
+		CASE 
+			WHEN L.Title LIKE '%Ola%' OR L.Title LIKE '%Bajaj%' OR L.Title LIKE '%Hero%' OR L.Title LIKE '%Ather%'
+				 OR L.Title LIKE '%KTM%' OR L.Title LIKE '%Royal Enfield%'
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 20: Luxury Brands
+		CASE 
+			WHEN L.Title LIKE '%Jaguar%' OR L.Title LIKE '%BMW%' OR L.Title LIKE '%Land Rover%' OR L.Title LIKE '%Range Rover%'
+				 OR L.Title LIKE '%Audi%' OR L.Title LIKE '%Mercedes%' OR L.Title LIKE '%Volvo%'
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 21: Festive
+		CASE 
+			WHEN L.Title LIKE '%festive%' AND (L.Title LIKE '%car%' OR L.Title LIKE '%auto%')
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 22: Manufacture
+		CASE WHEN L.Title LIKE '%manufacture%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 23: Pre-owned
+		--CASE 
+			--WHEN L.Title LIKE '%pre-owned%' OR L.Title LIKE '%second hand%'
+			--THEN 'Yes' ELSE 'No' END,
+
+			CASE 
+			WHEN L.Title LIKE '%used cars%' 
+				 OR L.Title LIKE '%second-hand cars%' 
+				 OR L.Title LIKE '%secondhand cars%' 
+				 OR L.Title LIKE '%pre-owned%' 
+			THEN 'Yes' 
+			ELSE 'No' 
+		END,
+
+
+		-- Classifier 24: Sector Specific
+		CASE 
+			WHEN L.Title LIKE '%auto%' OR L.Title LIKE '%car%' OR L.Title LIKE '%vehicle%' OR L.Title LIKE '%mobility%' 
+				 OR L.Title LIKE '%SUV%' OR L.Title LIKE '%sedan%'
+			THEN 'Yes' ELSE 'No' END,
+		--- Classifier 25: Competitor Products in Title
+CASE 
+    WHEN (
+
+        (L.URL LIKE '%Seltos%' OR L.URL LIKE '%EV6%' OR L.URL LIKE '%EV-6%' OR L.URL LIKE '%Sonet%' 
+         OR L.URL LIKE '%Carens%' OR L.URL LIKE '%Carnival%')
+
+       OR (L.URL LIKE '%Mahindra-Electric%' OR L.URL LIKE '%Mahindra-EV%' OR L.URL LIKE '%MahindraEV%' 
+         OR L.URL LIKE '%Scorpio%' OR L.URL LIKE '%Bolero%' OR L.URL LIKE '%BE6e%' OR L.URL LIKE '%XEV-9e%' 
+         OR L.URL LIKE '%Thar%' OR L.URL LIKE '%XUV%' OR L.URL LIKE '%XUV700%')
+
+        OR (L.URL LIKE '%Comet%' OR L.URL LIKE '%Astor%' OR L.URL LIKE '%Hector%' OR L.URL LIKE '%Gloster%')
+
+		     OR (L.URL LIKE '%Exter%' OR L.URL LIKE '%Hyundai-Venue%' OR L.URL LIKE '%Hyundai+Venue%' OR L.URL LIKE '%Aura%' 
+         OR L.URL LIKE '%i10%' OR L.URL LIKE '%i20%' OR L.URL LIKE '%Creta%' OR L.URL LIKE '%Alcazar%' 
+         OR L.URL LIKE '%Verna%' OR L.URL LIKE '%Tucson%' OR L.URL LIKE '%Kona-EV%' OR L.URL LIKE '%Ioniq%')
+     
+        OR (L.Title LIKE '%Seltos%' OR L.Title LIKE '%EV6%' OR L.Title LIKE '%EV-6%' OR L.Title LIKE '%Sonet%' 
+         OR L.Title LIKE '%Carens%' OR L.Title LIKE '%Carnival%')
+
+   	         OR (L.Title LIKE '%Mahindra Electric%' OR L.Title LIKE '%Mahindra EV%' 
+         OR L.Title LIKE '%Scorpio%' OR L.Title LIKE '%Bolero%' OR L.Title LIKE '%BE 6e%' 
+         OR L.Title LIKE '%XEV 9e%' OR L.Title LIKE '%Thar%' OR L.Title LIKE '%XUV%' OR L.Title LIKE '%XUV700%')
+
+        OR (L.Title LIKE '%Comet%' OR L.Title LIKE '%Astor%' OR L.Title LIKE '%Hector%' OR L.Title LIKE '%Gloster%')
+
+		           OR (L.Title LIKE '%Exter%' OR L.Title LIKE '%Hyundai Venue%' OR L.Title LIKE '%Aura%' 
+         OR L.Title LIKE '%i10%' OR L.Title LIKE '%i20%' OR L.Title LIKE '%Creta%' OR L.Title LIKE '%Alcazar%' 
+         OR L.Title LIKE '%Verna%' OR L.Title LIKE '%Tucson%' OR L.Title LIKE '%Kona EV%' OR L.Title LIKE '%Ioniq%')
+
+		 OR
+		  L.URL LIKE '%Tata-electric%' OR L.URL LIKE '%Tata+electric%' OR L.URL LIKE '%Tata+EV%' OR L.URL LIKE '%Tata-EV%' 
+        OR L.URL LIKE '%Tiago%' OR L.URL LIKE '%Tigor%' OR L.URL LIKE '%Punch%' OR L.URL LIKE '%Harrier%' 
+        OR L.URL LIKE '%Safari%' OR L.URL LIKE '%Nexon%' OR L.URL LIKE '%Curvv%' OR L.URL LIKE '%Altroz%' 
+        OR L.URL LIKE '%Sierra%' 
+
+		  OR L.Title LIKE '%Tata electric%' OR L.Title LIKE '%Tata EV%' OR L.Title LIKE '%Tiago%' OR L.Title LIKE '%Tigor%'
+        OR L.Title LIKE '%Punch%' OR L.Title LIKE '%Harrier%' OR L.Title LIKE '%Safari%' OR L.Title LIKE '%Nexon%'
+        OR L.Title LIKE '%Curvv%' OR L.Title LIKE '%Altroz%' OR L.Title LIKE '%Sierra%'
+    )
+    AND NOT (
+
+	 (L.URL LIKE '%WagonR%' OR L.URL LIKE '%Grand-Vitara%' OR L.URL LIKE '%Grand+Vitara%' OR L.URL LIKE '%S-Presso%'
+         OR L.URL LIKE '%Ertiga%' OR L.URL LIKE '%Fronx%' OR L.URL LIKE '%Dzire%' OR L.URL LIKE '%Celerio%' 
+         OR L.URL LIKE '%XL6%' OR L.URL LIKE '%Invicto%' OR L.URL LIKE '%Jimmy%' OR L.URL LIKE '%Baleno%' 
+         OR L.URL LIKE '%Brezza%' OR L.URL LIKE '%Alto%' OR L.URL LIKE '%Maruti-Swift%' OR L.URL LIKE '%Maruti+Swift%')
+
+
+		      OR (L.Title LIKE '%WagonR%' OR L.Title LIKE '%Grand Vitara%' OR L.Title LIKE '%S-Presso%' 
+         OR L.Title LIKE '%Ertiga%' OR L.Title LIKE '%Fronx%' OR L.Title LIKE '%Dzire%' OR L.Title LIKE '%Celerio%' 
+         OR L.Title LIKE '%XL6%' OR L.Title LIKE '%Invicto%' OR L.Title LIKE '%Jimmy%' OR L.Title LIKE '%Baleno%' 
+         OR L.Title LIKE '%Brezza%' OR L.Title LIKE '%Alto%' OR L.Title LIKE '%Maruti Swift%')
+
+	
+    )
+    THEN 'Yes' ELSE 'No'
+END,
+
+
+--- Classifier 26: Competitor Spokesperson Mentioned in Title
+
+		 CASE 
+				 WHEN  Title LIKE '%RC Bhargava%' OR Title LIKE '%C. Bhargava%' OR Title LIKE '%Hisashi Takeuchi%' OR Title LIKE '%Partho Banerjee%' 
+		 
+				THEN 'Yes'
+				ELSE 'No'
+		END,
+
+		 -- Classifier 27: Not Relevant domain
+			CASE 
+				WHEN EXISTS (
+					SELECT 1 
+					FROM MstNonNewsDomain ND 
+					WHERE LOWER(ND.Domain) = LOWER(L.publication)
+				)
+				OR LOWER(L.publication) LIKE '%construction%'
+				OR LOWER(L.publication) LIKE '%tractor%'
+				OR LOWER(L.publication) LIKE '%kheti%'
+				OR LOWER(L.publication) LIKE '%agriculture%'
+				OR LOWER(L.publication) LIKE '%agro%'
+				OR LOWER(L.publication) LIKE '%farm%'
+				OR LOWER(L.publication) LIKE '%farming%'
+				OR LOWER(L.publication) LIKE '%truck%'
+				THEN 'Yes' ELSE 'No'
+			END 
+
+    --FROM LinkOnlineDeduped_MarutiSuzuki L
+	    FROM ExcelOnlineData_MarutiSuzuki_24July L
+
+
+
+END
+
+
+
+
+
+USE [OnDemandDB]
+GO
+/****** Object:  StoredProcedure [dbo].[USP_Tagged_OnlineLinks_Mahindra]    Script Date: 09-09-2025 15:15:39 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[USP_Tagged_OnlineLinks_Mahindra]
+AS
+BEGIN
+ 
+    SET NOCOUNT ON;
+
+    INSERT INTO LinkOnlineTagged_Mahindra_24July (
+        [article_id],[incident_id] ,[url] ,[title] ,[description]  ,[date_time]
+      ,[author] ,[sentiment] ,[publication]  ,[publication_icon] ,[publication_category],[publication_type]
+      ,[publication_da]  ,[publication_traffic] ,[pi_score],[date_sort]  ,[da_sort]
+      ,[traffic_sort] ,[pi_score_sort] ,[mention_type]  ,[is_bookmarked] ,[headline_sentiment],
+      Classifier_IsNonNews,   Classifier_StockNews, Classifier_Reach_LessThan500,
+        Classifier_Reach_MoreThan10000, Classifier_URL_ContentType, Classifier_TradeMedia,
+        Classifier_Client_Mahindra, Classifier_Client_ProductMention,
+        Classifier_OtherCompanies, Classifier_ScooterOnly, Classifier_Accident,
+        Classifier_Review, Classifier_IPO, Classifier_Exports, Classifier_AutoExpo, Classifier_Launch, 
+    Classifier_ScooterBrands, Classifier_LuxuryBrands, Classifier_Festive, 
+    Classifier_Manufacture, Classifier_PreOwned, Classifier_SectorSpecific, Classifier_CompetitorProducts,
+Classifier_IsCompetitorSpokespersonMentioned,Classifier_IsNotRelevantDomain
+
+    )
+    SELECT 
+         [article_id],[incident_id] ,[url] ,[title] ,[description]  ,[date_time]
+      ,[author] ,[sentiment] ,[publication]  ,[publication_icon] ,[publication_category],[publication_type]
+      ,[publication_da]  ,[publication_traffic] ,[pi_score],[date_sort]  ,[da_sort]
+      ,[traffic_sort] ,[pi_score_sort] ,[mention_type]  ,[is_bookmarked] ,[headline_sentiment],
+
+	   					-- Classifier: Non-News Domain
+		CASE 
+			WHEN EXISTS (SELECT 1 FROM MstNonNewsDomain ND WHERE ND.Domain = L.Publication) 
+			THEN 'Yes' ELSE 'No' 
+		END,
+
+        -- Classifier 1: Stock News
+        --CASE 
+        --    WHEN L.URL LIKE '%stock%' OR L.URL LIKE '%share-price%' OR L.URL LIKE '%share+price%' 
+        --         OR L.URL LIKE '%NIFTY%' OR L.URL LIKE '%Sensex%' OR L.URL LIKE '%mutual-funds%' OR L.URL LIKE '%mutual+funds%'
+        --      OR L.Title LIKE '%stock%' OR L.Title LIKE '%share price%' OR L.Title LIKE '%NIFTY%' OR L.Title LIKE '%Sensex%' OR L.Title LIKE '%mutual funds%'
+        --    THEN 'Yes' ELSE 'No'
+        --END,
+		 -- Classifier 1: Stock News
+		CASE 
+				WHEN L.URL LIKE '%stock%' 
+					 OR L.URL LIKE '%sensex%' 
+					 OR L.URL LIKE '%NIFTY%' 
+					 OR L.URL LIKE '%mutual-funds%' 
+					 OR L.URL LIKE '%mutual+funds%' 
+					 OR L.URL LIKE '%market-this-week%' 
+					 OR L.URL LIKE '%market+this+week%' 
+					 OR L.URL LIKE '%BSE-index%' 
+					 OR L.URL LIKE '%BSE+index%' 
+					 OR L.URL LIKE '%MF%' 
+					 OR L.URL LIKE '%Brokerage%'
+					 OR L.Title LIKE '%stock%' 
+					 OR L.Title LIKE '%sensex%' 
+					 OR L.Title LIKE '%NIFTY%' 
+					 OR L.Title LIKE '%mutual funds%' 
+					 OR L.Title LIKE '%market this week%' 
+					 OR L.Title LIKE '%BSE index%' 
+					 OR L.Title LIKE '%MF%' 
+					 OR L.Title LIKE '%Brokerage%'
+				THEN 'Yes' 
+				ELSE 'No' 
+			END,
+
+
+        ---- Classifier 2: Also Read
+        --CASE 
+        --    WHEN L.HitSentence LIKE 'Also read%' OR L.HitSentence LIKE 'Read More%' THEN 'Yes'
+        --    ELSE 'No'
+        --END,
+
+        ---- Classifier 3: Reach < 500
+        --CASE WHEN L.publication_circulation < 500 THEN 'Yes' ELSE 'No' END,
+
+        ---- Classifier 4: Reach > 10000
+        --CASE WHEN L.publication_circulation > 10000 THEN 'Yes' ELSE 'No' END,
+		-- Classifier 3: Reach < 500
+CASE 
+    WHEN 
+        CASE 
+            WHEN L.publication_traffic LIKE '%M' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000000
+            WHEN L.publication_traffic LIKE '%K' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000
+            ELSE TRY_CAST(L.publication_traffic AS FLOAT)
+        END < 500 
+    THEN 'Yes' 
+    ELSE 'No' 
+END ,
+-- Classifier 4: Reach > 10000
+CASE 
+    WHEN 
+        CASE 
+            WHEN L.publication_traffic LIKE '%M' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000000
+            WHEN L.publication_traffic LIKE '%K' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000
+            ELSE TRY_CAST(L.publication_traffic AS FLOAT)
+        END > 10000 
+    THEN 'Yes' 
+    ELSE 'No' 
+END ,
+
+
+        -- Classifier 5: URL Content Type
+       CASE 
+            WHEN L.URL LIKE '%/tag/%' THEN 'tag'
+            WHEN L.URL LIKE '%/video/%' THEN 'video'
+            WHEN L.URL LIKE '%/photo-gallery/%' THEN 'photo-gallery'
+            ELSE NULL
+        END,
+
+        CASE 
+            WHEN L.Publication LIKE '%auto%' OR L.Publication LIKE '%car%' OR L.Publication LIKE '%motor%' 
+                 OR L.Publication LIKE '%drive%' OR L.Publication LIKE '%mechanic%'
+            THEN 'Yes' ELSE 'No'
+        END,
+
+      CASE 
+            WHEN L.URL LIKE '%Mahindra%' OR L.Title LIKE '%Mahindra%' THEN 'Yes' ELSE 'No'
+        END,
+
+        CASE
+            WHEN L.URL LIKE '%XUV700%' OR L.URL LIKE '%Scorpio%' OR L.URL LIKE '%Thar%' OR L.URL LIKE '%Bolero%'
+                OR L.URL LIKE '%XUV300%' OR L.URL LIKE '%Alturas%' OR L.URL LIKE '%eKUV%' OR L.URL LIKE '%e20%'
+                OR L.Title LIKE '%XUV700%' OR L.Title LIKE '%Scorpio%' OR L.Title LIKE '%Thar%' OR L.Title LIKE '%Bolero%'
+                OR L.Title LIKE '%XUV300%' OR L.Title LIKE '%Alturas%' OR L.Title LIKE '%eKUV%' OR L.Title LIKE '%e20%'
+            THEN 'Yes' ELSE 'No'
+        END,
+
+        --CASE 
+        --    WHEN L.Title LIKE '%Tata Motors%' OR L.Title LIKE '%Hyundai%' OR L.Title LIKE '%Kia%'
+        --        OR L.Title LIKE '%MG Motors%' OR L.Title LIKE '%Maruti%' OR L.Title LIKE '%Citroen%'
+        --        OR L.Title LIKE '%Toyota%' OR L.Title LIKE '%Honda%' OR L.Title LIKE '%Volkswagon%'
+        --        OR L.Title LIKE '%Skoda%' OR L.Title LIKE '%Nissan%' OR L.Title LIKE '%Renault%'
+        --        OR L.Title LIKE '%Jaguar%' OR L.Title LIKE '%Ola%' OR L.Title LIKE '%Bajaj%'
+        --    THEN 'Yes' ELSE 'No'
+        --END,
+		
+				CASE 
+			WHEN L.Title LIKE '%Kia%'  OR L.Title LIKE '%Tata%' OR L.Title LIKE '%MG Motors%' OR L.Title LIKE '%Hyundai%'
+				 OR L.Title LIKE '%Maruti%' OR L.Title LIKE '%Citroen%' OR L.Title LIKE '%Citroën%' OR L.Title LIKE '%Toyota%'
+				 OR L.Title LIKE '%Honda%' OR L.Title LIKE '%Volkswagon%' OR L.Title LIKE '%Skoda%' OR L.Title LIKE '%Nissan%'
+				 OR L.Title LIKE '%Renault%' OR L.Title LIKE '%BYD%'
+			THEN 'Yes' ELSE 'No' END,
+
+        CASE WHEN L.Title LIKE '%Scooter%' AND L.Title NOT LIKE '%Car%' THEN 'Yes' ELSE 'No' END,
+        CASE WHEN L.Title LIKE '%Accident%' THEN 'Yes' ELSE 'No' END,
+        CASE WHEN L.Title LIKE '%Review%' OR L.URL LIKE '%Review%' THEN 'Yes' ELSE 'No' END,
+
+
+		
+			-- Classifier 15: IPO
+		CASE WHEN L.Title LIKE '%IPO%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 16: Exports
+		CASE WHEN L.Title LIKE '%exports%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 17: Auto Expo
+		CASE 
+			WHEN (L.Title LIKE '%expo%' OR L.URL LIKE '%expo%')
+				 AND L.Title NOT LIKE '%exports%' AND L.URL NOT LIKE '%exports%'
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 18: Launch
+		CASE WHEN L.Title LIKE '%launch%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 19: Scooter Brands
+		CASE 
+			WHEN L.Title LIKE '%Ola%' OR L.Title LIKE '%Bajaj%' OR L.Title LIKE '%Hero%' OR L.Title LIKE '%Ather%'
+				 OR L.Title LIKE '%KTM%' OR L.Title LIKE '%Royal Enfield%'
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 20: Luxury Brands
+		CASE 
+			WHEN L.Title LIKE '%Jaguar%' OR L.Title LIKE '%BMW%' OR L.Title LIKE '%Land Rover%' OR L.Title LIKE '%Range Rover%'
+				 OR L.Title LIKE '%Audi%' OR L.Title LIKE '%Mercedes%' OR L.Title LIKE '%Volvo%'
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 21: Festive
+		CASE 
+			WHEN L.Title LIKE '%festive%' AND (L.Title LIKE '%car%' OR L.Title LIKE '%auto%')
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 22: Manufacture
+		CASE WHEN L.Title LIKE '%manufacture%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 23: Pre-owned
+		--CASE 
+		--	WHEN L.Title LIKE '%pre-owned%' OR L.Title LIKE '%second hand%'
+		--	THEN 'Yes' ELSE 'No' END,
+		CASE 
+			WHEN L.Title LIKE '%used cars%' 
+				 OR L.Title LIKE '%second-hand cars%' 
+				 OR L.Title LIKE '%secondhand cars%' 
+				 OR L.Title LIKE '%pre-owned%' 
+			THEN 'Yes' 
+			ELSE 'No' 
+		END,
+
+
+		-- Classifier 24: Sector Specific
+		CASE 
+			WHEN L.Title LIKE '%auto%' OR L.Title LIKE '%car%' OR L.Title LIKE '%vehicle%' OR L.Title LIKE '%mobility%' 
+				 OR L.Title LIKE '%SUV%' OR L.Title LIKE '%sedan%'
+			THEN 'Yes' ELSE 'No' END,
+
+		--- Classifier 25: Competitor Products in Title
+CASE 
+    WHEN (
+
+        (L.URL LIKE '%Seltos%' OR L.URL LIKE '%EV6%' OR L.URL LIKE '%EV-6%' OR L.URL LIKE '%Sonet%' 
+         OR L.URL LIKE '%Carens%' OR L.URL LIKE '%Carnival%')
+
+        OR (L.URL LIKE '%WagonR%' OR L.URL LIKE '%Grand-Vitara%' OR L.URL LIKE '%Grand+Vitara%' OR L.URL LIKE '%S-Presso%'
+         OR L.URL LIKE '%Ertiga%' OR L.URL LIKE '%Fronx%' OR L.URL LIKE '%Dzire%' OR L.URL LIKE '%Celerio%' 
+         OR L.URL LIKE '%XL6%' OR L.URL LIKE '%Invicto%' OR L.URL LIKE '%Jimmy%' OR L.URL LIKE '%Baleno%' 
+         OR L.URL LIKE '%Brezza%' OR L.URL LIKE '%Alto%' OR L.URL LIKE '%Maruti-Swift%' OR L.URL LIKE '%Maruti+Swift%')
+
+        OR (L.URL LIKE '%Comet%' OR L.URL LIKE '%Astor%' OR L.URL LIKE '%Hector%' OR L.URL LIKE '%Gloster%')
+
+		     OR (L.URL LIKE '%Exter%' OR L.URL LIKE '%Hyundai-Venue%' OR L.URL LIKE '%Hyundai+Venue%' OR L.URL LIKE '%Aura%' 
+         OR L.URL LIKE '%i10%' OR L.URL LIKE '%i20%' OR L.URL LIKE '%Creta%' OR L.URL LIKE '%Alcazar%' 
+         OR L.URL LIKE '%Verna%' OR L.URL LIKE '%Tucson%' OR L.URL LIKE '%Kona-EV%' OR L.URL LIKE '%Ioniq%')
+     
+        OR (L.Title LIKE '%Seltos%' OR L.Title LIKE '%EV6%' OR L.Title LIKE '%EV-6%' OR L.Title LIKE '%Sonet%' 
+         OR L.Title LIKE '%Carens%' OR L.Title LIKE '%Carnival%')
+
+        OR (L.Title LIKE '%WagonR%' OR L.Title LIKE '%Grand Vitara%' OR L.Title LIKE '%S-Presso%' 
+         OR L.Title LIKE '%Ertiga%' OR L.Title LIKE '%Fronx%' OR L.Title LIKE '%Dzire%' OR L.Title LIKE '%Celerio%' 
+         OR L.Title LIKE '%XL6%' OR L.Title LIKE '%Invicto%' OR L.Title LIKE '%Jimmy%' OR L.Title LIKE '%Baleno%' 
+         OR L.Title LIKE '%Brezza%' OR L.Title LIKE '%Alto%' OR L.Title LIKE '%Maruti Swift%')
+
+        OR (L.Title LIKE '%Comet%' OR L.Title LIKE '%Astor%' OR L.Title LIKE '%Hector%' OR L.Title LIKE '%Gloster%')
+
+		           OR (L.Title LIKE '%Exter%' OR L.Title LIKE '%Hyundai Venue%' OR L.Title LIKE '%Aura%' 
+         OR L.Title LIKE '%i10%' OR L.Title LIKE '%i20%' OR L.Title LIKE '%Creta%' OR L.Title LIKE '%Alcazar%' 
+         OR L.Title LIKE '%Verna%' OR L.Title LIKE '%Tucson%' OR L.Title LIKE '%Kona EV%' OR L.Title LIKE '%Ioniq%')
+
+
+
+		 OR
+		  L.URL LIKE '%Tata-electric%' OR L.URL LIKE '%Tata+electric%' OR L.URL LIKE '%Tata+EV%' OR L.URL LIKE '%Tata-EV%' 
+        OR L.URL LIKE '%Tiago%' OR L.URL LIKE '%Tigor%' OR L.URL LIKE '%Punch%' OR L.URL LIKE '%Harrier%' 
+        OR L.URL LIKE '%Safari%' OR L.URL LIKE '%Nexon%' OR L.URL LIKE '%Curvv%' OR L.URL LIKE '%Altroz%' 
+        OR L.URL LIKE '%Sierra%' 
+
+		  OR L.Title LIKE '%Tata electric%' OR L.Title LIKE '%Tata EV%' OR L.Title LIKE '%Tiago%' OR L.Title LIKE '%Tigor%'
+        OR L.Title LIKE '%Punch%' OR L.Title LIKE '%Harrier%' OR L.Title LIKE '%Safari%' OR L.Title LIKE '%Nexon%'
+        OR L.Title LIKE '%Curvv%' OR L.Title LIKE '%Altroz%' OR L.Title LIKE '%Sierra%'
+    )
+    AND NOT (
+(L.URL LIKE '%Mahindra-Electric%' OR L.URL LIKE '%Mahindra-EV%' OR L.URL LIKE '%MahindraEV%' 
+         OR L.URL LIKE '%Scorpio%' OR L.URL LIKE '%Bolero%' OR L.URL LIKE '%BE6e%' OR L.URL LIKE '%XEV-9e%' 
+         OR L.URL LIKE '%Thar%' OR L.URL LIKE '%XUV%' OR L.URL LIKE '%XUV700%')
+
+		         OR (L.Title LIKE '%Mahindra Electric%' OR L.Title LIKE '%Mahindra EV%' 
+         OR L.Title LIKE '%Scorpio%' OR L.Title LIKE '%Bolero%' OR L.Title LIKE '%BE 6e%' 
+         OR L.Title LIKE '%XEV 9e%' OR L.Title LIKE '%Thar%' OR L.Title LIKE '%XUV%' OR L.Title LIKE '%XUV700%')
+
+
+
+
+
+    )
+    THEN 'Yes' ELSE 'No'
+END,
+
+
+
+--- Classifier 26: Competitor Spokesperson Mentioned in Title
+
+		 CASE 
+				 WHEN Title LIKE '%Anish Shah%' OR Title LIKE '%Rajesh Jejurikar%' OR Title LIKE '%Nalinikanth Gollagunta%' OR
+         Title LIKE '%Veejay Nakra%' OR Title LIKE '%Velusamy%' OR Title LIKE '%Pratap Bose%' OR Title LIKE '%Vijay Nakra%' 
+		 
+				THEN 'Yes'
+				ELSE 'No'
+		END,
+
+		 -- Classifier 27: Not Relevant domain
+			CASE 
+				WHEN EXISTS (
+					SELECT 1 
+					FROM MstNonNewsDomain ND 
+					WHERE LOWER(ND.Domain) = LOWER(L.publication)
+				)
+				OR LOWER(L.publication) LIKE '%construction%'
+				OR LOWER(L.publication) LIKE '%tractor%'
+				OR LOWER(L.publication) LIKE '%kheti%'
+				OR LOWER(L.publication) LIKE '%agriculture%'
+				OR LOWER(L.publication) LIKE '%agro%'
+				OR LOWER(L.publication) LIKE '%farm%'
+				OR LOWER(L.publication) LIKE '%farming%'
+				OR LOWER(L.publication) LIKE '%truck%'
+				THEN 'Yes' ELSE 'No'
+			END 
+
+
+    --FROM LinkOnlineDeduped_Mahindra L
+	    FROM ExcelOnlineData_Mahindra_24July L
+
+
+
+END
+
+
+
+
+USE [OnDemandDB]
+GO
+/****** Object:  StoredProcedure [dbo].[USP_Tagged_OnlineLinks_KiaMotor]    Script Date: 09-09-2025 15:15:22 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[USP_Tagged_OnlineLinks_KiaMotor]
+AS
+BEGIN
+ 
+    SET NOCOUNT ON;
+
+    INSERT INTO LinkOnlineTagged_KiaMotor_24July (
+        [article_id],[incident_id] ,[url] ,[title] ,[description]  ,[date_time]
+      ,[author] ,[sentiment] ,[publication]  ,[publication_icon] ,[publication_category],[publication_type]
+      ,[publication_da]  ,[publication_traffic] ,[pi_score],[date_sort]  ,[da_sort]
+      ,[traffic_sort] ,[pi_score_sort] ,[mention_type]  ,[is_bookmarked] ,[headline_sentiment],
+      Classifier_IsNonNews,  Classifier_StockNews, Classifier_Reach_LessThan500,
+        Classifier_Reach_MoreThan10000, Classifier_URL_ContentType, Classifier_TradeMedia,
+        Classifier_Client_KiaMotor, Classifier_Client_ProductMention,
+        Classifier_OtherCompanies, Classifier_ScooterOnly, Classifier_Accident,
+        Classifier_Review,Classifier_IPO, Classifier_Exports, Classifier_AutoExpo, Classifier_Launch, 
+    Classifier_ScooterBrands, Classifier_LuxuryBrands, Classifier_Festive, 
+    Classifier_Manufacture, Classifier_PreOwned, Classifier_SectorSpecific, Classifier_CompetitorProducts,
+Classifier_IsCompetitorSpokespersonMentioned,Classifier_IsNotRelevantDomain
+    )
+    SELECT 
+         [article_id],[incident_id] ,[url] ,[title] ,[description]  ,[date_time]
+      ,[author] ,[sentiment] ,[publication]  ,[publication_icon] ,[publication_category],[publication_type]
+      ,[publication_da]  ,[publication_traffic] ,[pi_score],[date_sort]  ,[da_sort]
+      ,[traffic_sort] ,[pi_score_sort] ,[mention_type]  ,[is_bookmarked] ,[headline_sentiment],
+
+	   					-- Classifier: Non-News Domain
+		CASE 
+			WHEN EXISTS (SELECT 1 FROM MstNonNewsDomain ND WHERE ND.Domain = L.Publication) 
+			THEN 'Yes' ELSE 'No' 
+		END,
+
+        -- Classifier 1: Stock News
+        --CASE 
+        --    WHEN L.URL LIKE '%stock%' OR L.URL LIKE '%share-price%' OR L.URL LIKE '%share+price%' 
+        --         OR L.URL LIKE '%NIFTY%' OR L.URL LIKE '%Sensex%' OR L.URL LIKE '%mutual-funds%' OR L.URL LIKE '%mutual+funds%'
+        --      OR L.Title LIKE '%stock%' OR L.Title LIKE '%share price%' OR L.Title LIKE '%NIFTY%' OR L.Title LIKE '%Sensex%' OR L.Title LIKE '%mutual funds%'
+        --    THEN 'Yes' ELSE 'No'
+        --END,
+
+		-- Classifier 1: Stock News
+		CASE 
+				WHEN L.URL LIKE '%stock%' 
+					 OR L.URL LIKE '%sensex%' 
+					 OR L.URL LIKE '%NIFTY%' 
+					 OR L.URL LIKE '%mutual-funds%' 
+					 OR L.URL LIKE '%mutual+funds%' 
+					 OR L.URL LIKE '%market-this-week%' 
+					 OR L.URL LIKE '%market+this+week%' 
+					 OR L.URL LIKE '%BSE-index%' 
+					 OR L.URL LIKE '%BSE+index%' 
+					 OR L.URL LIKE '%MF%' 
+					 OR L.URL LIKE '%Brokerage%'
+					 OR L.Title LIKE '%stock%' 
+					 OR L.Title LIKE '%sensex%' 
+					 OR L.Title LIKE '%NIFTY%' 
+					 OR L.Title LIKE '%mutual funds%' 
+					 OR L.Title LIKE '%market this week%' 
+					 OR L.Title LIKE '%BSE index%' 
+					 OR L.Title LIKE '%MF%' 
+					 OR L.Title LIKE '%Brokerage%'
+				THEN 'Yes' 
+				ELSE 'No' 
+			END,
+
+
+        ---- Classifier 2: Also Read
+        --CASE 
+        --    WHEN L.HitSentence LIKE 'Also read%' OR L.HitSentence LIKE 'Read More%' THEN 'Yes'
+        --    ELSE 'No'
+        --END,
+
+        ---- Classifier 3: Reach < 500
+        --CASE WHEN L.publication_traffic < 500 THEN 'Yes' ELSE 'No' END,
+
+        ---- Classifier 4: Reach > 10000
+        --CASE WHEN L.publication_traffic > 10000 THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 3: Reach < 500
+CASE 
+    WHEN 
+        CASE 
+            WHEN L.publication_traffic LIKE '%M' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000000
+            WHEN L.publication_traffic LIKE '%K' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000
+            ELSE TRY_CAST(L.publication_traffic AS FLOAT)
+        END < 500 
+    THEN 'Yes' 
+    ELSE 'No' 
+END ,
+
+-- Classifier 4: Reach > 10000
+CASE 
+    WHEN 
+        CASE 
+            WHEN L.publication_traffic LIKE '%M' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000000
+            WHEN L.publication_traffic LIKE '%K' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000
+            ELSE TRY_CAST(L.publication_traffic AS FLOAT)
+        END > 10000 
+    THEN 'Yes' 
+    ELSE 'No' 
+END ,
+
+        -- Classifier 5: URL Content Type
+       CASE 
+            WHEN L.URL LIKE '%/tag/%' THEN 'tag'
+            WHEN L.URL LIKE '%/video/%' THEN 'video'
+            WHEN L.URL LIKE '%/photo-gallery/%' THEN 'photo-gallery'
+            ELSE NULL
+        END,
+
+        CASE 
+            WHEN L.Publication LIKE '%auto%' OR L.Publication LIKE '%car%' OR L.Publication LIKE '%motor%' 
+                 OR L.Publication LIKE '%drive%' OR L.Publication LIKE '%mechanic%'
+            THEN 'Yes' ELSE 'No'
+        END,
+
+        CASE 
+            WHEN L.URL LIKE '%Kia%' OR L.Title LIKE '%Kia%' THEN 'Yes' ELSE 'No'
+        END,
+
+        CASE
+            WHEN L.URL LIKE '%Seltos%' OR L.URL LIKE '%Sonet%' OR L.URL LIKE '%Carens%' OR L.URL LIKE '%EV6%' OR L.URL LIKE '%Carnival%'
+              OR L.Title LIKE '%Seltos%' OR L.Title LIKE '%Sonet%' OR L.Title LIKE '%Carens%' OR L.Title LIKE '%EV6%' OR L.Title LIKE '%Carnival%'
+            THEN 'Yes' ELSE 'No'
+        END,
+
+        --CASE 
+        --    WHEN L.Title LIKE '%Mahindra%' OR L.Title LIKE '%Tata Motors%' OR L.Title LIKE '%Hyundai%'
+        --        OR L.Title LIKE '%MG Motors%' OR L.Title LIKE '%Maruti%' OR L.Title LIKE '%Citroen%'
+        --        OR L.Title LIKE '%Toyota%' OR L.Title LIKE '%Honda%' OR L.Title LIKE '%Volkswagon%'
+        --        OR L.Title LIKE '%Skoda%' OR L.Title LIKE '%Nissan%' OR L.Title LIKE '%Renault%'
+        --        OR L.Title LIKE '%Jaguar%' OR L.Title LIKE '%Ola%' OR L.Title LIKE '%Bajaj%'
+        --    THEN 'Yes' ELSE 'No'
+        --END,
+
+		
+		CASE 
+			WHEN L.Title LIKE '%Mahindra%'  OR L.Title LIKE '%Tata%' OR L.Title LIKE '%MG Motors%' OR L.Title LIKE '%Hyundai%'
+				 OR L.Title LIKE '%Maruti%' OR L.Title LIKE '%Citroen%' OR L.Title LIKE '%Citroën%' OR L.Title LIKE '%Toyota%'
+				 OR L.Title LIKE '%Honda%' OR L.Title LIKE '%Volkswagon%' OR L.Title LIKE '%Skoda%' OR L.Title LIKE '%Nissan%'
+				 OR L.Title LIKE '%Renault%' OR L.Title LIKE '%BYD%'
+			THEN 'Yes' ELSE 'No' END,
+
+        CASE WHEN L.Title LIKE '%Scooter%' AND L.Title NOT LIKE '%Car%' THEN 'Yes' ELSE 'No' END,
+        CASE WHEN L.Title LIKE '%Accident%' THEN 'Yes' ELSE 'No' END,
+        CASE WHEN L.Title LIKE '%Review%' OR L.URL LIKE '%Review%' THEN 'Yes' ELSE 'No' END,
+
+
+		
+				-- Classifier 15: IPO
+		CASE WHEN L.Title LIKE '%IPO%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 16: Exports
+		CASE WHEN L.Title LIKE '%exports%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 17: Auto Expo
+		CASE 
+			WHEN (L.Title LIKE '%expo%' OR L.URL LIKE '%expo%')
+				 AND L.Title NOT LIKE '%exports%' AND L.URL NOT LIKE '%exports%'
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 18: Launch
+		CASE WHEN L.Title LIKE '%launch%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 19: Scooter Brands
+		CASE 
+			WHEN L.Title LIKE '%Ola%' OR L.Title LIKE '%Bajaj%' OR L.Title LIKE '%Hero%' OR L.Title LIKE '%Ather%'
+				 OR L.Title LIKE '%KTM%' OR L.Title LIKE '%Royal Enfield%'
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 20: Luxury Brands
+		CASE 
+			WHEN L.Title LIKE '%Jaguar%' OR L.Title LIKE '%BMW%' OR L.Title LIKE '%Land Rover%' OR L.Title LIKE '%Range Rover%'
+				 OR L.Title LIKE '%Audi%' OR L.Title LIKE '%Mercedes%' OR L.Title LIKE '%Volvo%'
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 21: Festive
+		CASE 
+			WHEN L.Title LIKE '%festive%' AND (L.Title LIKE '%car%' OR L.Title LIKE '%auto%')
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 22: Manufacture
+		CASE WHEN L.Title LIKE '%manufacture%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 23: Pre-owned
+		--CASE 
+		--	WHEN L.Title LIKE '%pre-owned%' OR L.Title LIKE '%second hand%'
+		--	THEN 'Yes' ELSE 'No' END,
+		CASE 
+			WHEN L.Title LIKE '%used cars%' 
+				 OR L.Title LIKE '%second-hand cars%' 
+				 OR L.Title LIKE '%secondhand cars%' 
+				 OR L.Title LIKE '%pre-owned%' 
+			THEN 'Yes' 
+			ELSE 'No' 
+		END,
+
+
+		-- Classifier 24: Sector Specific
+		CASE 
+			WHEN L.Title LIKE '%auto%' OR L.Title LIKE '%car%' OR L.Title LIKE '%vehicle%' OR L.Title LIKE '%mobility%' 
+				 OR L.Title LIKE '%SUV%' OR L.Title LIKE '%sedan%'
+			THEN 'Yes' ELSE 'No' END,
+
+CASE 
+    WHEN (
+
+	   (L.URL LIKE '%Exter%' OR L.URL LIKE '%Hyundai-Venue%' OR L.URL LIKE '%Hyundai+Venue%' OR L.URL LIKE '%Aura%' 
+         OR L.URL LIKE '%i10%' OR L.URL LIKE '%i20%' OR L.URL LIKE '%Creta%' OR L.URL LIKE '%Alcazar%' 
+         OR L.URL LIKE '%Verna%' OR L.URL LIKE '%Tucson%' OR L.URL LIKE '%Kona-EV%' OR L.URL LIKE '%Ioniq%')
+
+      
+        OR (L.URL LIKE '%WagonR%' OR L.URL LIKE '%Grand-Vitara%' OR L.URL LIKE '%Grand+Vitara%' OR L.URL LIKE '%S-Presso%'
+         OR L.URL LIKE '%Ertiga%' OR L.URL LIKE '%Fronx%' OR L.URL LIKE '%Dzire%' OR L.URL LIKE '%Celerio%' 
+         OR L.URL LIKE '%XL6%' OR L.URL LIKE '%Invicto%' OR L.URL LIKE '%Jimmy%' OR L.URL LIKE '%Baleno%' 
+         OR L.URL LIKE '%Brezza%' OR L.URL LIKE '%Alto%' OR L.URL LIKE '%Maruti-Swift%' OR L.URL LIKE '%Maruti+Swift%')
+
+        OR (L.URL LIKE '%Comet%' OR L.URL LIKE '%Astor%' OR L.URL LIKE '%Hector%' OR L.URL LIKE '%Gloster%')
+
+        OR (L.URL LIKE '%Mahindra-Electric%' OR L.URL LIKE '%Mahindra-EV%' OR L.URL LIKE '%MahindraEV%' 
+         OR L.URL LIKE '%Scorpio%' OR L.URL LIKE '%Bolero%' OR L.URL LIKE '%BE6e%' OR L.URL LIKE '%XEV-9e%' 
+         OR L.URL LIKE '%Thar%' OR L.URL LIKE '%XUV%' OR L.URL LIKE '%XUV700%')
+
+		 
+           OR (L.Title LIKE '%Exter%' OR L.Title LIKE '%Hyundai Venue%' OR L.Title LIKE '%Aura%' 
+         OR L.Title LIKE '%i10%' OR L.Title LIKE '%i20%' OR L.Title LIKE '%Creta%' OR L.Title LIKE '%Alcazar%' 
+         OR L.Title LIKE '%Verna%' OR L.Title LIKE '%Tucson%' OR L.Title LIKE '%Kona EV%' OR L.Title LIKE '%Ioniq%')
+
+     
+       
+        OR (L.Title LIKE '%WagonR%' OR L.Title LIKE '%Grand Vitara%' OR L.Title LIKE '%S-Presso%' 
+         OR L.Title LIKE '%Ertiga%' OR L.Title LIKE '%Fronx%' OR L.Title LIKE '%Dzire%' OR L.Title LIKE '%Celerio%' 
+         OR L.Title LIKE '%XL6%' OR L.Title LIKE '%Invicto%' OR L.Title LIKE '%Jimmy%' OR L.Title LIKE '%Baleno%' 
+         OR L.Title LIKE '%Brezza%' OR L.Title LIKE '%Alto%' OR L.Title LIKE '%Maruti Swift%')
+
+        OR (L.Title LIKE '%Comet%' OR L.Title LIKE '%Astor%' OR L.Title LIKE '%Hector%' OR L.Title LIKE '%Gloster%')
+
+        OR (L.Title LIKE '%Mahindra Electric%' OR L.Title LIKE '%Mahindra EV%' 
+         OR L.Title LIKE '%Scorpio%' OR L.Title LIKE '%Bolero%' OR L.Title LIKE '%BE 6e%' 
+         OR L.Title LIKE '%XEV 9e%' OR L.Title LIKE '%Thar%' OR L.Title LIKE '%XUV%' OR L.Title LIKE '%XUV700%')
+
+		 OR
+		  L.URL LIKE '%Tata-electric%' OR L.URL LIKE '%Tata+electric%' OR L.URL LIKE '%Tata+EV%' OR L.URL LIKE '%Tata-EV%' 
+        OR L.URL LIKE '%Tiago%' OR L.URL LIKE '%Tigor%' OR L.URL LIKE '%Punch%' OR L.URL LIKE '%Harrier%' 
+        OR L.URL LIKE '%Safari%' OR L.URL LIKE '%Nexon%' OR L.URL LIKE '%Curvv%' OR L.URL LIKE '%Altroz%' 
+        OR L.URL LIKE '%Sierra%' 
+
+		  OR L.Title LIKE '%Tata electric%' OR L.Title LIKE '%Tata EV%' OR L.Title LIKE '%Tiago%' OR L.Title LIKE '%Tigor%'
+        OR L.Title LIKE '%Punch%' OR L.Title LIKE '%Harrier%' OR L.Title LIKE '%Safari%' OR L.Title LIKE '%Nexon%'
+        OR L.Title LIKE '%Curvv%' OR L.Title LIKE '%Altroz%' OR L.Title LIKE '%Sierra%'
+    )
+    AND NOT (
+
+		 (L.URL LIKE '%Seltos%' OR L.URL LIKE '%EV6%' OR L.URL LIKE '%EV-6%' OR L.URL LIKE '%Sonet%' 
+         OR L.URL LIKE '%Carens%' OR L.URL LIKE '%Carnival%')
+
+    
+		 OR (L.Title LIKE '%Seltos%' OR L.Title LIKE '%EV6%' OR L.Title LIKE '%EV-6%' OR L.Title LIKE '%Sonet%' 
+         OR L.Title LIKE '%Carens%' OR L.Title LIKE '%Carnival%')
+
+    )
+    THEN 'Yes' ELSE 'No'
+END,
+
+--- Classifier 26: Competitor Spokesperson Mentioned in Title
+
+		 CASE 
+				 WHEN Title LIKE '%Gwanggu Lee%' OR Title LIKE '%Hardeep Singh Brar%' OR Title LIKE '%Hardeep Brar%'
+				THEN 'Yes'
+				ELSE 'No'
+		END,
+
+		 -- Classifier 27: Not Relevant domain
+			CASE 
+				WHEN EXISTS (
+					SELECT 1 
+					FROM MstNonNewsDomain ND 
+					WHERE LOWER(ND.Domain) = LOWER(L.publication)
+				)
+				OR LOWER(L.publication) LIKE '%construction%'
+				OR LOWER(L.publication) LIKE '%tractor%'
+				OR LOWER(L.publication) LIKE '%kheti%'
+				OR LOWER(L.publication) LIKE '%agriculture%'
+				OR LOWER(L.publication) LIKE '%agro%'
+				OR LOWER(L.publication) LIKE '%farm%'
+				OR LOWER(L.publication) LIKE '%farming%'
+				OR LOWER(L.publication) LIKE '%truck%'
+				THEN 'Yes' ELSE 'No'
+			END 
+
+
+  --  FROM LinkOnlineDeduped_KiaMotor L
+
+  From ExcelOnlineData_KiaMotor_24July L
+
+
+
+END
+
+
+
+
+USE [OnDemandDB]
+GO
+/****** Object:  StoredProcedure [dbo].[USP_Tagged_OnlineLinks_Hyundai]    Script Date: 09-09-2025 15:14:59 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[USP_Tagged_OnlineLinks_Hyundai]
+AS
+BEGIN
+ 
+    SET NOCOUNT ON;
+
+    INSERT INTO LinkOnlineTagged_Hyundai_24July (
+        [article_id],[incident_id] ,[url] ,[title] ,[description]  ,[date_time]
+      ,[author] ,[sentiment] ,[publication]  ,[publication_icon] ,[publication_category],[publication_type]
+      ,[publication_da]  ,[publication_traffic] ,[pi_score],[date_sort]  ,[da_sort]
+      ,[traffic_sort] ,[pi_score_sort] ,[mention_type]  ,[is_bookmarked] ,[headline_sentiment],
+    Classifier_IsNonNews,    Classifier_StockNews, Classifier_Reach_LessThan500,
+        Classifier_Reach_MoreThan10000, Classifier_URL_ContentType, Classifier_TradeMedia,
+        Classifier_Client_Hyundai, Classifier_Client_ProductMention,
+        Classifier_OtherCompanies, Classifier_ScooterOnly, Classifier_Accident,
+        Classifier_Review,Classifier_IPO, Classifier_Exports, Classifier_AutoExpo, Classifier_Launch, 
+    Classifier_ScooterBrands, Classifier_LuxuryBrands, Classifier_Festive, 
+    Classifier_Manufacture, Classifier_PreOwned, Classifier_SectorSpecific, Classifier_CompetitorProducts,
+	Classifier_IsCompetitorSpokespersonMentioned,Classifier_IsNotRelevantDomain
+    )
+    SELECT 
+         [article_id],[incident_id] ,[url] ,[title] ,[description]  ,[date_time]
+      ,[author] ,[sentiment] ,[publication]  ,[publication_icon] ,[publication_category],[publication_type]
+      ,[publication_da]  ,[publication_traffic] ,[pi_score],[date_sort]  ,[da_sort]
+      ,[traffic_sort] ,[pi_score_sort] ,[mention_type]  ,[is_bookmarked] ,[headline_sentiment],
+
+	  					-- Classifier: Non-News Domain
+		CASE 
+			WHEN EXISTS (SELECT 1 FROM MstNonNewsDomain ND WHERE ND.Domain = L.Publication) 
+			THEN 'Yes' ELSE 'No' 
+		END,
+
+
+        -- Classifier 1: Stock News
+        --CASE 
+        --    WHEN L.URL LIKE '%stock%' OR L.URL LIKE '%share-price%' OR L.URL LIKE '%share+price%' 
+        --         OR L.URL LIKE '%NIFTY%' OR L.URL LIKE '%Sensex%' OR L.URL LIKE '%mutual-funds%' OR L.URL LIKE '%mutual+funds%'
+        --      OR L.Title LIKE '%stock%' OR L.Title LIKE '%share price%' OR L.Title LIKE '%NIFTY%' OR L.Title LIKE '%Sensex%' OR L.Title LIKE '%mutual funds%'
+        --    THEN 'Yes' ELSE 'No'
+        --END,
+		  -- Classifier 1: Stock News
+		CASE 
+				WHEN L.URL LIKE '%stock%' 
+					 OR L.URL LIKE '%sensex%' 
+					 OR L.URL LIKE '%NIFTY%' 
+					 OR L.URL LIKE '%mutual-funds%' 
+					 OR L.URL LIKE '%mutual+funds%' 
+					 OR L.URL LIKE '%market-this-week%' 
+					 OR L.URL LIKE '%market+this+week%' 
+					 OR L.URL LIKE '%BSE-index%' 
+					 OR L.URL LIKE '%BSE+index%' 
+					 OR L.URL LIKE '%MF%' 
+					 OR L.URL LIKE '%Brokerage%'
+					 OR L.Title LIKE '%stock%' 
+					 OR L.Title LIKE '%sensex%' 
+					 OR L.Title LIKE '%NIFTY%' 
+					 OR L.Title LIKE '%mutual funds%' 
+					 OR L.Title LIKE '%market this week%' 
+					 OR L.Title LIKE '%BSE index%' 
+					 OR L.Title LIKE '%MF%' 
+					 OR L.Title LIKE '%Brokerage%'
+				THEN 'Yes' 
+				ELSE 'No' 
+			END,
+
+
+
+        ---- Classifier 2: Also Read
+        --CASE 
+        --    WHEN L.HitSentence LIKE 'Also read%' OR L.HitSentence LIKE 'Read More%' THEN 'Yes'
+        --    ELSE 'No'
+        --END,
+
+        ---- Classifier 3: Reach < 500
+        --CASE WHEN L.publication_traffic < 500 THEN 'Yes' ELSE 'No' END,
+
+        ---- Classifier 4: Reach > 10000
+        --CASE WHEN L.publication_traffic > 10000 THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 3: Reach < 500
+-- Classifier 3: Reach < 500
+CASE 
+    WHEN 
+        CASE 
+            WHEN L.publication_traffic LIKE '%M' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000000
+            WHEN L.publication_traffic LIKE '%K' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000
+            ELSE TRY_CAST(L.publication_traffic AS FLOAT)
+        END < 500 
+    THEN 'Yes' 
+    ELSE 'No' 
+END ,
+
+-- Classifier 4: Reach > 10000
+CASE 
+    WHEN 
+        CASE 
+            WHEN L.publication_traffic LIKE '%M' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000000
+            WHEN L.publication_traffic LIKE '%K' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000
+            ELSE TRY_CAST(L.publication_traffic AS FLOAT)
+        END > 10000 
+    THEN 'Yes' 
+    ELSE 'No' 
+END ,
+
+        -- Classifier 5: URL Content Type
+        CASE 
+            WHEN L.URL LIKE '%/tag/%' THEN 'tag'
+            WHEN L.URL LIKE '%/video/%' THEN 'video'
+            WHEN L.URL LIKE '%/photo-gallery/%' THEN 'photo-gallery'
+            ELSE NULL
+        END,
+
+        -- Classifier 6: Trade Media
+        CASE 
+            WHEN L.Publication LIKE '%auto%' OR L.Publication LIKE '%car%' OR L.Publication LIKE '%motor%' 
+                 OR L.Publication LIKE '%drive%' OR L.Publication LIKE '%mechanic%'
+            THEN 'Yes' ELSE 'No'
+        END,
+
+        -- Classifier 7: Hyundai Mention
+        CASE 
+            WHEN L.URL LIKE '%Hyundai%' OR L.Title LIKE '%Hyundai%' THEN 'Yes' ELSE 'No'
+        END,
+
+        -- Classifier 8: Hyundai Product Mention
+        CASE
+            WHEN L.URL LIKE '%Exter%' OR L.URL LIKE '%Hyundai-Venue%' OR L.URL LIKE '%Hyundai+Venue%'
+                OR L.URL LIKE '%Aura%' OR L.URL LIKE '%i10%' OR L.URL LIKE '%i20%' OR L.URL LIKE '%Creta%'
+                OR L.URL LIKE '%Alcazar%' OR L.URL LIKE '%Verna%' OR L.URL LIKE '%Tucson%'
+                OR L.URL LIKE '%Kona-EV%' OR L.URL LIKE '%Kona+EV%' OR L.URL LIKE '%Ioniq%'
+                OR L.Title LIKE '%Exter%' OR L.Title LIKE '%Hyundai Venue%' OR L.Title LIKE '%Aura%'
+                OR L.Title LIKE '%i10%' OR L.Title LIKE '%i20%' OR L.Title LIKE '%Creta%'
+                OR L.Title LIKE '%Alcazar%' OR L.Title LIKE '%Verna%' OR L.Title LIKE '%Tucson%'
+                OR L.Title LIKE '%Kona EV%' OR L.Title LIKE '%Ioniq%'
+            THEN 'Yes' ELSE 'No'
+        END,
+
+        -- Classifier 10: Other Companies
+        --CASE 
+        --    WHEN L.Title LIKE '%Mahindra%' OR L.Title LIKE '%Tata Motors%' OR L.Title LIKE '%Kia%'
+        --        OR L.Title LIKE '%MG Motors%' OR L.Title LIKE '%Maruti%' OR L.Title LIKE '%Citroen%'
+        --        OR L.Title LIKE '%Toyota%' OR L.Title LIKE '%Honda%' OR L.Title LIKE '%Volkswagon%'
+        --        OR L.Title LIKE '%Skoda%' OR L.Title LIKE '%Nissan%' OR L.Title LIKE '%Renault%'
+        --        OR L.Title LIKE '%Jaguar%' OR L.Title LIKE '%Ola%' OR L.Title LIKE '%Bajaj%'
+        --    THEN 'Yes' ELSE 'No'
+        --END,
+
+			CASE 
+			WHEN L.Title LIKE '%Mahindra%' OR L.Title LIKE '%Tata%' OR L.Title LIKE '%Kia%' OR L.Title LIKE '%MG Motors%' 
+				 OR L.Title LIKE '%Maruti%' OR L.Title LIKE '%Citroen%' OR L.Title LIKE '%Citroën%' OR L.Title LIKE '%Toyota%'
+				 OR L.Title LIKE '%Honda%' OR L.Title LIKE '%Volkswagon%' OR L.Title LIKE '%Skoda%' OR L.Title LIKE '%Nissan%'
+				 OR L.Title LIKE '%Renault%' OR L.Title LIKE '%BYD%'
+			THEN 'Yes' ELSE 'No' END,
+
+        -- Classifier 11: Scooter but not Car
+        CASE WHEN L.Title LIKE '%Scooter%' AND L.Title NOT LIKE '%Car%' THEN 'Yes' ELSE 'No' END,
+
+        -- Classifier 12: Accident
+        CASE WHEN L.Title LIKE '%Accident%' THEN 'Yes' ELSE 'No' END,
+
+        -- Classifier 13: Review
+        CASE WHEN L.Title LIKE '%Review%' OR L.URL LIKE '%Review%' THEN 'Yes' ELSE 'No' END,
+
+
+		
+			-- Classifier 15: IPO
+		CASE WHEN L.Title LIKE '%IPO%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 16: Exports
+		CASE WHEN L.Title LIKE '%exports%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 17: Auto Expo
+		CASE 
+			WHEN (L.Title LIKE '%expo%' OR L.URL LIKE '%expo%')
+				 AND L.Title NOT LIKE '%exports%' AND L.URL NOT LIKE '%exports%'
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 18: Launch
+		CASE WHEN L.Title LIKE '%launch%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 19: Scooter Brands
+		CASE 
+			WHEN L.Title LIKE '%Ola%' OR L.Title LIKE '%Bajaj%' OR L.Title LIKE '%Hero%' OR L.Title LIKE '%Ather%'
+				 OR L.Title LIKE '%KTM%' OR L.Title LIKE '%Royal Enfield%'
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 20: Luxury Brands
+		CASE 
+			WHEN L.Title LIKE '%Jaguar%' OR L.Title LIKE '%BMW%' OR L.Title LIKE '%Land Rover%' OR L.Title LIKE '%Range Rover%'
+				 OR L.Title LIKE '%Audi%' OR L.Title LIKE '%Mercedes%' OR L.Title LIKE '%Volvo%'
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 21: Festive
+		CASE 
+			WHEN L.Title LIKE '%festive%' AND (L.Title LIKE '%car%' OR L.Title LIKE '%auto%')
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 22: Manufacture
+		CASE WHEN L.Title LIKE '%manufacture%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 23: Pre-owned
+		--CASE 
+		--	WHEN L.Title LIKE '%pre-owned%' OR L.Title LIKE '%second hand%'
+		--	THEN 'Yes' ELSE 'No' END,
+		CASE 
+			WHEN L.Title LIKE '%used cars%' 
+				 OR L.Title LIKE '%second-hand cars%' 
+				 OR L.Title LIKE '%secondhand cars%' 
+				 OR L.Title LIKE '%pre-owned%' 
+			THEN 'Yes' 
+			ELSE 'No' 
+		END,
+
+		-- Classifier 24: Sector Specific
+		CASE 
+			WHEN L.Title LIKE '%auto%' OR L.Title LIKE '%car%' OR L.Title LIKE '%vehicle%' OR L.Title LIKE '%mobility%' 
+				 OR L.Title LIKE '%SUV%' OR L.Title LIKE '%sedan%'
+			THEN 'Yes' ELSE 'No' END,
+
+
+
+		--- Classifier 25: Competitor Products in Title
+CASE 
+    WHEN (
+
+        (L.URL LIKE '%Seltos%' OR L.URL LIKE '%EV6%' OR L.URL LIKE '%EV-6%' OR L.URL LIKE '%Sonet%' 
+         OR L.URL LIKE '%Carens%' OR L.URL LIKE '%Carnival%')
+
+        OR (L.URL LIKE '%WagonR%' OR L.URL LIKE '%Grand-Vitara%' OR L.URL LIKE '%Grand+Vitara%' OR L.URL LIKE '%S-Presso%'
+         OR L.URL LIKE '%Ertiga%' OR L.URL LIKE '%Fronx%' OR L.URL LIKE '%Dzire%' OR L.URL LIKE '%Celerio%' 
+         OR L.URL LIKE '%XL6%' OR L.URL LIKE '%Invicto%' OR L.URL LIKE '%Jimmy%' OR L.URL LIKE '%Baleno%' 
+         OR L.URL LIKE '%Brezza%' OR L.URL LIKE '%Alto%' OR L.URL LIKE '%Maruti-Swift%' OR L.URL LIKE '%Maruti+Swift%')
+
+        OR (L.URL LIKE '%Comet%' OR L.URL LIKE '%Astor%' OR L.URL LIKE '%Hector%' OR L.URL LIKE '%Gloster%')
+
+        OR (L.URL LIKE '%Mahindra-Electric%' OR L.URL LIKE '%Mahindra-EV%' OR L.URL LIKE '%MahindraEV%' 
+         OR L.URL LIKE '%Scorpio%' OR L.URL LIKE '%Bolero%' OR L.URL LIKE '%BE6e%' OR L.URL LIKE '%XEV-9e%' 
+         OR L.URL LIKE '%Thar%' OR L.URL LIKE '%XUV%' OR L.URL LIKE '%XUV700%')
+
+     
+        OR (L.Title LIKE '%Seltos%' OR L.Title LIKE '%EV6%' OR L.Title LIKE '%EV-6%' OR L.Title LIKE '%Sonet%' 
+         OR L.Title LIKE '%Carens%' OR L.Title LIKE '%Carnival%')
+
+        OR (L.Title LIKE '%WagonR%' OR L.Title LIKE '%Grand Vitara%' OR L.Title LIKE '%S-Presso%' 
+         OR L.Title LIKE '%Ertiga%' OR L.Title LIKE '%Fronx%' OR L.Title LIKE '%Dzire%' OR L.Title LIKE '%Celerio%' 
+         OR L.Title LIKE '%XL6%' OR L.Title LIKE '%Invicto%' OR L.Title LIKE '%Jimmy%' OR L.Title LIKE '%Baleno%' 
+         OR L.Title LIKE '%Brezza%' OR L.Title LIKE '%Alto%' OR L.Title LIKE '%Maruti Swift%')
+
+        OR (L.Title LIKE '%Comet%' OR L.Title LIKE '%Astor%' OR L.Title LIKE '%Hector%' OR L.Title LIKE '%Gloster%')
+
+        OR (L.Title LIKE '%Mahindra Electric%' OR L.Title LIKE '%Mahindra EV%' 
+         OR L.Title LIKE '%Scorpio%' OR L.Title LIKE '%Bolero%' OR L.Title LIKE '%BE 6e%' 
+         OR L.Title LIKE '%XEV 9e%' OR L.Title LIKE '%Thar%' OR L.Title LIKE '%XUV%' OR L.Title LIKE '%XUV700%')
+
+		 OR
+		  L.URL LIKE '%Tata-electric%' OR L.URL LIKE '%Tata+electric%' OR L.URL LIKE '%Tata+EV%' OR L.URL LIKE '%Tata-EV%' 
+        OR L.URL LIKE '%Tiago%' OR L.URL LIKE '%Tigor%' OR L.URL LIKE '%Punch%' OR L.URL LIKE '%Harrier%' 
+        OR L.URL LIKE '%Safari%' OR L.URL LIKE '%Nexon%' OR L.URL LIKE '%Curvv%' OR L.URL LIKE '%Altroz%' 
+        OR L.URL LIKE '%Sierra%' 
+
+		  OR L.Title LIKE '%Tata electric%' OR L.Title LIKE '%Tata EV%' OR L.Title LIKE '%Tiago%' OR L.Title LIKE '%Tigor%'
+        OR L.Title LIKE '%Punch%' OR L.Title LIKE '%Harrier%' OR L.Title LIKE '%Safari%' OR L.Title LIKE '%Nexon%'
+        OR L.Title LIKE '%Curvv%' OR L.Title LIKE '%Altroz%' OR L.Title LIKE '%Sierra%'
+    )
+    AND NOT (
+       (L.URL LIKE '%Exter%' OR L.URL LIKE '%Hyundai-Venue%' OR L.URL LIKE '%Hyundai+Venue%' OR L.URL LIKE '%Aura%' 
+         OR L.URL LIKE '%i10%' OR L.URL LIKE '%i20%' OR L.URL LIKE '%Creta%' OR L.URL LIKE '%Alcazar%' 
+         OR L.URL LIKE '%Verna%' OR L.URL LIKE '%Tucson%' OR L.URL LIKE '%Kona-EV%' OR L.URL LIKE '%Ioniq%')
+
+           OR (L.Title LIKE '%Exter%' OR L.Title LIKE '%Hyundai Venue%' OR L.Title LIKE '%Aura%' 
+         OR L.Title LIKE '%i10%' OR L.Title LIKE '%i20%' OR L.Title LIKE '%Creta%' OR L.Title LIKE '%Alcazar%' 
+         OR L.Title LIKE '%Verna%' OR L.Title LIKE '%Tucson%' OR L.Title LIKE '%Kona EV%' OR L.Title LIKE '%Ioniq%')
+
+    )
+    THEN 'Yes' ELSE 'No'
+ END,
+
+
+
+		--- Classifier 26: Competitor Spokesperson Mentioned in Title
+
+		 CASE 
+				 WHEN Title LIKE '%Tarun Garg%' OR Title LIKE '%Gopala Krishnan%' OR Title LIKE '%Puneet Anand%' 
+					  OR Title LIKE '%Virat Khullar%' OR Title LIKE '%Unsoo Kim%'
+				THEN 'Yes'
+				ELSE 'No'
+		END,
+
+		 -- Classifier 27: Not Relevant domain
+			CASE 
+				WHEN EXISTS (
+					SELECT 1 
+					FROM MstNonNewsDomain ND 
+					WHERE LOWER(ND.Domain) = LOWER(L.publication)
+				)
+				OR LOWER(L.publication) LIKE '%construction%'
+				OR LOWER(L.publication) LIKE '%tractor%'
+				OR LOWER(L.publication) LIKE '%kheti%'
+				OR LOWER(L.publication) LIKE '%agriculture%'
+				OR LOWER(L.publication) LIKE '%agro%'
+				OR LOWER(L.publication) LIKE '%farm%'
+				OR LOWER(L.publication) LIKE '%farming%'
+				OR LOWER(L.publication) LIKE '%truck%'
+				THEN 'Yes' ELSE 'No'
+			END 
+    --FROM LinkOnlineDeduped_Hyundai L
+	 FROM ExcelOnlineData_Hyundai_24July L
+
+
+
+END
+
+
+
+
+USE [OnDemandDB]
+GO
+/****** Object:  StoredProcedure [dbo].[USP_Tagged_OnlineLinks_MGMotor]    Script Date: 08-09-2025 20:58:42 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[USP_Tagged_OnlineLinks_MGMotor]
+AS
+BEGIN
+ 
+    SET NOCOUNT ON;
+
+    INSERT INTO LinkOnlineTagged_MGMotor_24July (
+        [article_id],[incident_id] ,[url] ,[title] ,[description]  ,[date_time]
+      ,[author] ,[sentiment] ,[publication]  ,[publication_icon] ,[publication_category],[publication_type]
+      ,[publication_da]  ,[publication_traffic] ,[pi_score],[date_sort]  ,[da_sort]
+      ,[traffic_sort] ,[pi_score_sort] ,[mention_type]  ,[is_bookmarked] ,[headline_sentiment],
+     Classifier_IsNonNews,   Classifier_StockNews, Classifier_Reach_LessThan500,
+        Classifier_Reach_MoreThan10000, Classifier_URL_ContentType, Classifier_TradeMedia,
+        Classifier_Client_MGMotor, Classifier_Client_ProductMention,
+        Classifier_OtherCompanies, Classifier_ScooterOnly, Classifier_Accident,
+        Classifier_Review,Classifier_IPO, Classifier_Exports, Classifier_AutoExpo, Classifier_Launch, 
+    Classifier_ScooterBrands, Classifier_LuxuryBrands, Classifier_Festive, 
+    Classifier_Manufacture, Classifier_PreOwned, Classifier_SectorSpecific, Classifier_CompetitorProducts,
+Classifier_IsCompetitorSpokespersonMentioned,Classifier_IsNotRelevantDomain
+
+    )
+    SELECT 
+         [article_id],[incident_id] ,[url] ,[title] ,[description]  ,[date_time]
+      ,[author] ,[sentiment] ,[publication]  ,[publication_icon] ,[publication_category],[publication_type]
+      ,[publication_da]  ,[publication_traffic] ,[pi_score],[date_sort]  ,[da_sort]
+      ,[traffic_sort] ,[pi_score_sort] ,[mention_type]  ,[is_bookmarked] ,[headline_sentiment],
+
+	   					-- Classifier: Non-News Domain
+		CASE 
+			WHEN EXISTS (SELECT 1 FROM MstNonNewsDomain ND WHERE ND.Domain = L.Publication) 
+			THEN 'Yes' ELSE 'No' 
+		END,
+
+        -- Classifier 1: Stock News
+        --CASE 
+        --    WHEN L.URL LIKE '%stock%' OR L.URL LIKE '%share-price%' OR L.URL LIKE '%share+price%' 
+        --         OR L.URL LIKE '%NIFTY%' OR L.URL LIKE '%Sensex%' OR L.URL LIKE '%mutual-funds%' OR L.URL LIKE '%mutual+funds%'
+        --      OR L.Title LIKE '%stock%' OR L.Title LIKE '%share price%' OR L.Title LIKE '%NIFTY%' OR L.Title LIKE '%Sensex%' OR L.Title LIKE '%mutual funds%'
+        --    THEN 'Yes' ELSE 'No'
+        --END,
+
+		
+  -- Classifier 1: Stock News
+		CASE 
+				WHEN L.URL LIKE '%stock%' 
+					 OR L.URL LIKE '%sensex%' 
+					 OR L.URL LIKE '%NIFTY%' 
+					 OR L.URL LIKE '%mutual-funds%' 
+					 OR L.URL LIKE '%mutual+funds%' 
+					 OR L.URL LIKE '%market-this-week%' 
+					 OR L.URL LIKE '%market+this+week%' 
+					 OR L.URL LIKE '%BSE-index%' 
+					 OR L.URL LIKE '%BSE+index%' 
+					 OR L.URL LIKE '%MF%' 
+					 OR L.URL LIKE '%Brokerage%'
+					 OR L.Title LIKE '%stock%' 
+					 OR L.Title LIKE '%sensex%' 
+					 OR L.Title LIKE '%NIFTY%' 
+					 OR L.Title LIKE '%mutual funds%' 
+					 OR L.Title LIKE '%market this week%' 
+					 OR L.Title LIKE '%BSE index%' 
+					 OR L.Title LIKE '%MF%' 
+					 OR L.Title LIKE '%Brokerage%'
+				THEN 'Yes' 
+				ELSE 'No' 
+			END,
+
+
+        ---- Classifier 2: Also Read
+        --CASE 
+        --    WHEN L.HitSentence LIKE 'Also read%' OR L.HitSentence LIKE 'Read More%' THEN 'Yes'
+        --    ELSE 'No'
+        --END,
+
+        ---- Classifier 3: Reach < 500
+        --CASE WHEN L.publication_traffic < 500 THEN 'Yes' ELSE 'No' END,
+
+        ---- Classifier 4: Reach > 10000
+        --CASE WHEN L.publication_traffic > 10000 THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 3: Reach < 500
+CASE 
+    WHEN 
+        CASE 
+            WHEN L.publication_traffic LIKE '%M' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000000
+            WHEN L.publication_traffic LIKE '%K' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000
+            ELSE TRY_CAST(L.publication_traffic AS FLOAT)
+        END < 500 
+    THEN 'Yes' 
+    ELSE 'No' 
+END,
+
+-- Classifier 4: Reach > 10000
+CASE 
+    WHEN 
+        CASE 
+            WHEN L.publication_traffic LIKE '%M' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000000
+            WHEN L.publication_traffic LIKE '%K' THEN TRY_CAST(LEFT(L.publication_traffic, LEN(L.publication_traffic) - 1) AS FLOAT) * 1000
+            ELSE TRY_CAST(L.publication_traffic AS FLOAT)
+        END > 10000 
+    THEN 'Yes' 
+    ELSE 'No' 
+END ,
+
+
+        -- Classifier 5: URL Content Type
+       CASE 
+            WHEN L.URL LIKE '%/tag/%' THEN 'tag'
+            WHEN L.URL LIKE '%/video/%' THEN 'video'
+            WHEN L.URL LIKE '%/photo-gallery/%' THEN 'photo-gallery'
+            ELSE NULL
+        END,
+
+        CASE 
+            WHEN L.Publication LIKE '%auto%' OR L.Publication LIKE '%car%' OR L.Publication LIKE '%motor%' 
+                 OR L.Publication LIKE '%drive%' OR L.Publication LIKE '%mechanic%'
+            THEN 'Yes' ELSE 'No'
+        END,
+
+ CASE WHEN L.URL LIKE '%MG%' OR L.Title LIKE '%MG%' THEN 'Yes' ELSE 'No' END,
+
+        CASE WHEN L.URL LIKE '%Hector%' OR L.URL LIKE '%Astor%' OR L.URL LIKE '%Gloster%' OR L.URL LIKE '%ZS EV%'
+                  OR L.URL LIKE '%Comet EV%' OR L.Title LIKE '%Hector%' OR L.Title LIKE '%Astor%' OR L.Title LIKE '%Gloster%'
+                  OR L.Title LIKE '%ZS EV%' OR L.Title LIKE '%Comet EV%'
+             THEN 'Yes' ELSE 'No' END,
+
+       
+		        			CASE 
+			WHEN L.Title LIKE '%Kia%'  OR L.Title LIKE '%Tata%' OR L.Title LIKE '%Maruti%' OR L.Title LIKE '%Hyundai%'
+				 OR L.Title LIKE '%Mahindra%' OR L.Title LIKE '%Citroen%' OR L.Title LIKE '%Citroën%' OR L.Title LIKE '%Toyota%'
+				 OR L.Title LIKE '%Honda%' OR L.Title LIKE '%Volkswagon%' OR L.Title LIKE '%Skoda%' OR L.Title LIKE '%Nissan%'
+				 OR L.Title LIKE '%Renault%' OR L.Title LIKE '%BYD%'
+			THEN 'Yes' ELSE 'No' END,
+
+        CASE WHEN L.Title LIKE '%Scooter%' AND L.Title NOT LIKE '%Car%' THEN 'Yes' ELSE 'No' END,
+        CASE WHEN L.Title LIKE '%Accident%' THEN 'Yes' ELSE 'No' END,
+        CASE WHEN L.Title LIKE '%Review%' OR L.URL LIKE '%Review%' THEN 'Yes' ELSE 'No' END,
+
+				-- Classifier 15: IPO
+		CASE WHEN L.Title LIKE '%IPO%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 16: Exports
+		CASE WHEN L.Title LIKE '%exports%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 17: Auto Expo
+		CASE 
+			WHEN (L.Title LIKE '%expo%' OR L.URL LIKE '%expo%')
+				 AND L.Title NOT LIKE '%exports%' AND L.URL NOT LIKE '%exports%'
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 18: Launch
+		CASE WHEN L.Title LIKE '%launch%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 19: Scooter Brands
+		CASE 
+			WHEN L.Title LIKE '%Ola%' OR L.Title LIKE '%Bajaj%' OR L.Title LIKE '%Hero%' OR L.Title LIKE '%Ather%'
+				 OR L.Title LIKE '%KTM%' OR L.Title LIKE '%Royal Enfield%'
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 20: Luxury Brands
+		CASE 
+			WHEN L.Title LIKE '%Jaguar%' OR L.Title LIKE '%BMW%' OR L.Title LIKE '%Land Rover%' OR L.Title LIKE '%Range Rover%'
+				 OR L.Title LIKE '%Audi%' OR L.Title LIKE '%Mercedes%' OR L.Title LIKE '%Volvo%'
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 21: Festive
+		CASE 
+			WHEN L.Title LIKE '%festive%' AND (L.Title LIKE '%car%' OR L.Title LIKE '%auto%')
+			THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 22: Manufacture
+		CASE WHEN L.Title LIKE '%manufacture%' THEN 'Yes' ELSE 'No' END,
+
+		-- Classifier 23: Pre-owned
+		--CASE 
+		--	WHEN L.Title LIKE '%pre-owned%' OR L.Title LIKE '%second hand%'
+		--	THEN 'Yes' ELSE 'No' END,
+
+		CASE 
+			WHEN L.Title LIKE '%used cars%' 
+				 OR L.Title LIKE '%second-hand cars%' 
+				 OR L.Title LIKE '%secondhand cars%' 
+				 OR L.Title LIKE '%pre-owned%' 
+			THEN 'Yes' 
+			ELSE 'No' 
+		END,
+
+
+		-- Classifier 24: Sector Specific
+		CASE 
+			WHEN L.Title LIKE '%auto%' OR L.Title LIKE '%car%' OR L.Title LIKE '%vehicle%' OR L.Title LIKE '%mobility%' 
+				 OR L.Title LIKE '%SUV%' OR L.Title LIKE '%sedan%'
+			THEN 'Yes' ELSE 'No' END,
+
+		--- Classifier 25: Competitor Products in Title
+CASE 
+    WHEN (
+
+        (L.URL LIKE '%Seltos%' OR L.URL LIKE '%EV6%' OR L.URL LIKE '%EV-6%' OR L.URL LIKE '%Sonet%' 
+         OR L.URL LIKE '%Carens%' OR L.URL LIKE '%Carnival%')
+
+       OR (L.URL LIKE '%Mahindra-Electric%' OR L.URL LIKE '%Mahindra-EV%' OR L.URL LIKE '%MahindraEV%' 
+         OR L.URL LIKE '%Scorpio%' OR L.URL LIKE '%Bolero%' OR L.URL LIKE '%BE6e%' OR L.URL LIKE '%XEV-9e%' 
+         OR L.URL LIKE '%Thar%' OR L.URL LIKE '%XUV%' OR L.URL LIKE '%XUV700%')
+
+       	OR (L.URL LIKE '%WagonR%' OR L.URL LIKE '%Grand-Vitara%' OR L.URL LIKE '%Grand+Vitara%' OR L.URL LIKE '%S-Presso%'
+         OR L.URL LIKE '%Ertiga%' OR L.URL LIKE '%Fronx%' OR L.URL LIKE '%Dzire%' OR L.URL LIKE '%Celerio%' 
+         OR L.URL LIKE '%XL6%' OR L.URL LIKE '%Invicto%' OR L.URL LIKE '%Jimmy%' OR L.URL LIKE '%Baleno%' 
+         OR L.URL LIKE '%Brezza%' OR L.URL LIKE '%Alto%' OR L.URL LIKE '%Maruti-Swift%' OR L.URL LIKE '%Maruti+Swift%')
+
+		     OR (L.URL LIKE '%Exter%' OR L.URL LIKE '%Hyundai-Venue%' OR L.URL LIKE '%Hyundai+Venue%' OR L.URL LIKE '%Aura%' 
+         OR L.URL LIKE '%i10%' OR L.URL LIKE '%i20%' OR L.URL LIKE '%Creta%' OR L.URL LIKE '%Alcazar%' 
+         OR L.URL LIKE '%Verna%' OR L.URL LIKE '%Tucson%' OR L.URL LIKE '%Kona-EV%' OR L.URL LIKE '%Ioniq%')
+     
+        OR (L.Title LIKE '%Seltos%' OR L.Title LIKE '%EV6%' OR L.Title LIKE '%EV-6%' OR L.Title LIKE '%Sonet%' 
+         OR L.Title LIKE '%Carens%' OR L.Title LIKE '%Carnival%')
+
+   	         OR (L.Title LIKE '%Mahindra Electric%' OR L.Title LIKE '%Mahindra EV%' 
+         OR L.Title LIKE '%Scorpio%' OR L.Title LIKE '%Bolero%' OR L.Title LIKE '%BE 6e%' 
+         OR L.Title LIKE '%XEV 9e%' OR L.Title LIKE '%Thar%' OR L.Title LIKE '%XUV%' OR L.Title LIKE '%XUV700%')
+
+     
+
+		      OR (L.Title LIKE '%WagonR%' OR L.Title LIKE '%Grand Vitara%' OR L.Title LIKE '%S-Presso%' 
+         OR L.Title LIKE '%Ertiga%' OR L.Title LIKE '%Fronx%' OR L.Title LIKE '%Dzire%' OR L.Title LIKE '%Celerio%' 
+         OR L.Title LIKE '%XL6%' OR L.Title LIKE '%Invicto%' OR L.Title LIKE '%Jimmy%' OR L.Title LIKE '%Baleno%' 
+         OR L.Title LIKE '%Brezza%' OR L.Title LIKE '%Alto%' OR L.Title LIKE '%Maruti Swift%')
+
+
+		           OR (L.Title LIKE '%Exter%' OR L.Title LIKE '%Hyundai Venue%' OR L.Title LIKE '%Aura%' 
+         OR L.Title LIKE '%i10%' OR L.Title LIKE '%i20%' OR L.Title LIKE '%Creta%' OR L.Title LIKE '%Alcazar%' 
+         OR L.Title LIKE '%Verna%' OR L.Title LIKE '%Tucson%' OR L.Title LIKE '%Kona EV%' OR L.Title LIKE '%Ioniq%')
+
+		 OR
+		  L.URL LIKE '%Tata-electric%' OR L.URL LIKE '%Tata+electric%' OR L.URL LIKE '%Tata+EV%' OR L.URL LIKE '%Tata-EV%' 
+        OR L.URL LIKE '%Tiago%' OR L.URL LIKE '%Tigor%' OR L.URL LIKE '%Punch%' OR L.URL LIKE '%Harrier%' 
+        OR L.URL LIKE '%Safari%' OR L.URL LIKE '%Nexon%' OR L.URL LIKE '%Curvv%' OR L.URL LIKE '%Altroz%' 
+        OR L.URL LIKE '%Sierra%' 
+
+		  OR L.Title LIKE '%Tata electric%' OR L.Title LIKE '%Tata EV%' OR L.Title LIKE '%Tiago%' OR L.Title LIKE '%Tigor%'
+        OR L.Title LIKE '%Punch%' OR L.Title LIKE '%Harrier%' OR L.Title LIKE '%Safari%' OR L.Title LIKE '%Nexon%'
+        OR L.Title LIKE '%Curvv%' OR L.Title LIKE '%Altroz%' OR L.Title LIKE '%Sierra%'
+    )
+    AND NOT (
+			(L.URL LIKE '%Comet%' OR L.URL LIKE '%Astor%' OR L.URL LIKE '%Hector%' OR L.URL LIKE '%Gloster%')
+
+		     OR (L.Title LIKE '%Comet%' OR L.Title LIKE '%Astor%' OR L.Title LIKE '%Hector%' OR L.Title LIKE '%Gloster%')   )
+    THEN 'Yes' ELSE 'No'
+END,
+
+
+
+--- Classifier 26: Competitor Spokesperson Mentioned in Title
+
+		 CASE 
+				 WHEN Title LIKE '%Rajeev Chaba%' OR Title LIKE '%Satinder Singh Bajwa%' OR Title LIKE '%Satinder Bajwa%' OR Title LIKE '%Gaurav Gupta%' 
+		 
+				THEN 'Yes'
+				ELSE 'No'
+		END,
+
+		 -- Classifier 27: Not Relevant domain
+			CASE 
+				WHEN EXISTS (
+					SELECT 1 
+					FROM MstNonNewsDomain ND 
+					WHERE LOWER(ND.Domain) = LOWER(L.publication)
+				)
+				OR LOWER(L.publication) LIKE '%construction%'
+				OR LOWER(L.publication) LIKE '%tractor%'
+				OR LOWER(L.publication) LIKE '%kheti%'
+				OR LOWER(L.publication) LIKE '%agriculture%'
+				OR LOWER(L.publication) LIKE '%agro%'
+				OR LOWER(L.publication) LIKE '%farm%'
+				OR LOWER(L.publication) LIKE '%farming%'
+				OR LOWER(L.publication) LIKE '%truck%'
+				THEN 'Yes' ELSE 'No'
+			END 
+
+
+    --FROM LinkOnlineDeduped_MGMotor L
+	    FROM ExcelOnlineData_MGMotor_24July L
+
+
+END
+
